@@ -1,10 +1,34 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useState } from "react";
+import { Calendar } from "@/components/ui/calendar";
 import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Select,
+  SelectTrigger,
+  SelectContent,
+  SelectItem,
+  SelectValue,
+} from "@/components/ui/select";
+
 import {
   ClipboardList,
   Check,
@@ -12,9 +36,15 @@ import {
   Trash2,
   BadgeCheck,
   AlarmCheck,
+  CalendarIcon,
 } from "lucide-react";
 
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+
 import data from "./data.json";
+
+import { useState } from "react";
 
 export default function TodoPage() {
   return (
@@ -236,13 +266,15 @@ function TodoItem({ todo }) {
         >
           {completed ? "완료" : "진행중"}
         </Badge>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <Edit className="w-4 h-4" />
-        </Button>
+        <EditTodoDialog todo={todo}>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <Edit className="w-4 h-4" />
+          </Button>
+        </EditTodoDialog>
         <Button
           variant="ghost"
           size="icon"
@@ -252,5 +284,189 @@ function TodoItem({ todo }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+function EditTodoDialog({ todo, children }) {
+  const [form, setForm] = useState({
+    title: todo.title || "",
+    description: todo.description || "",
+    completed: todo.completed || false,
+    startDate: todo.startDate ? new Date(todo.startDate) : null,
+    dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
+  });
+
+  const handleSave = () => {
+    console.log("저장 데이터:", form);
+    // TODO: API 호출
+  };
+
+  // 시간 옵션 생성 (00:00 ~ 23:30, 30분 단위)
+  const timeOptions = Array.from({ length: 48 }, (_, i) => {
+    const h = String(Math.floor(i / 2)).padStart(2, "0");
+    const m = i % 2 === 0 ? "00" : "30";
+    return `${h}:${m}`;
+  });
+
+  const handleTimeChange = (field, time) => {
+    if (!form[field]) return;
+    const [h, m] = time.split(":");
+    const updated = new Date(form[field]);
+    updated.setHours(h, m);
+    setForm({ ...form, [field]: updated });
+  };
+
+  return (
+    <Dialog>
+      <DialogTrigger asChild>{children}</DialogTrigger>
+      <DialogContent className="sm:max-w-lg">
+        <DialogHeader>
+          <DialogTitle>작업 수정</DialogTitle>
+        </DialogHeader>
+
+        <div className="grid gap-6 py-4">
+          {/* 제목 */}
+          <div className="grid gap-2">
+            <Label htmlFor="title">제목</Label>
+            <Input
+              id="title"
+              name="title"
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+              placeholder="할 일 제목을 입력하세요"
+            />
+          </div>
+
+          {/* 설명 */}
+          <div className="grid gap-2">
+            <Label htmlFor="description">설명</Label>
+            <Textarea
+              id="description"
+              name="description"
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+              placeholder="할 일에 대한 설명을 입력하세요"
+            />
+          </div>
+
+          {/* 시작 날짜 & 시간 */}
+          <div className="grid gap-2">
+            <Label>시작 날짜</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-[120px] justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.startDate
+                      ? format(form.startDate, "M월 d일", { locale: ko })
+                      : "날짜 선택"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="py-2 flex justify-center"
+                  align="start"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={form.startDate}
+                    onSelect={(date) => setForm({ ...form, startDate: date })}
+                    initialFocus
+                    locale={ko}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Select
+                value={form.startDate ? format(form.startDate, "HH:mm") : ""}
+                onValueChange={(val) => handleTimeChange("startDate", val)}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="시간 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* 마감 날짜 & 시간 */}
+          <div className="grid gap-2">
+            <Label>마감 날짜</Label>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="w-[120px] justify-start text-left font-normal"
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {form.dueDate
+                      ? format(form.dueDate, "M월 d일", { locale: ko })
+                      : "날짜 선택"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent
+                  className="py-2 flex justify-center"
+                  align="start"
+                >
+                  <Calendar
+                    mode="single"
+                    selected={form.dueDate}
+                    onSelect={(date) => setForm({ ...form, dueDate: date })}
+                    initialFocus
+                    locale={ko}
+                  />
+                </PopoverContent>
+              </Popover>
+              <Select
+                value={form.dueDate ? format(form.dueDate, "HH:mm") : ""}
+                onValueChange={(val) => handleTimeChange("dueDate", val)}
+              >
+                <SelectTrigger className="w-[100px]">
+                  <SelectValue placeholder="시간 선택" />
+                </SelectTrigger>
+                <SelectContent>
+                  {timeOptions.map((t) => (
+                    <SelectItem key={t} value={t}>
+                      {t}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {/* 완료 여부 */}
+          <div className="flex items-center space-x-2 mt-6">
+            <Checkbox
+              id="completed"
+              checked={form.completed}
+              onCheckedChange={(checked) =>
+                setForm({ ...form, completed: checked })
+              }
+            />
+            <Label htmlFor="completed">완료됨</Label>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button type="button" variant="outline">
+            취소
+          </Button>
+          <Button type="button" onClick={handleSave}>
+            저장
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
