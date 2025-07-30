@@ -13,41 +13,36 @@ import {
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header() {
+  const isLogin = true; // TODO: 로그인 여부를 확인하는 로직 필요
   const pathname = usePathname();
 
-  return (
-    <header className="flex h-16 w-full items-center justify-between my-6">
-      <div className="flex items-center gap-12">
-        <Link href="/" className="flex items-center gap-2 p-2">
-          <CheckSquare className="h-8 w-8 text-blue-600" />
-          <h1 className="text-xl font-bold">TodoList</h1>
-        </Link>
-        <nav className="hidden md:flex items-center gap-12">
-          <Link href="/todo" className="p-2">
-            <span
-              className={`text-base font-medium transition-colors duration-200 cursor-pointer ${
-                pathname === "/todo"
-                  ? "text-blue-600"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Todo
-            </span>
-          </Link>
+  function NavLink({ href, name }) {
+    return (
+      <Link href={href} className="p-2">
+        <span
+          className={`text-base transition-colors duration-200 ${
+            pathname === href
+              ? "text-primary font-bold"
+              : "text-muted-foreground font-medium hover:text-foreground"
+          }`}
+        >
+          {name}
+        </span>
+      </Link>
+    );
+  }
 
-          <Link href="/calendar" className="p-2">
-            <span
-              className={`text-base font-medium transition-colors duration-200 cursor-pointer ${
-                pathname === "/calendar"
-                  ? "text-blue-600"
-                  : "text-slate-600 hover:text-slate-900"
-              }`}
-            >
-              Calendar
-            </span>
-          </Link>
-        </nav>
-      </div>
+  function NavLinks({ pathname }) {
+    return (
+      <nav className="flex items-center gap-6">
+        <NavLink href="/todo" name="Todo" />
+        <NavLink href="/calendar" name="Calendar" />
+      </nav>
+    );
+  }
+
+  function UserMenu() {
+    return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" size="icon" className="rounded-full">
@@ -68,6 +63,31 @@ export default function Header() {
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
+    );
+  }
+
+  function LoginButton() {
+    return (
+      <Link href="/login">
+        <Button variant="outline" size="sm" className="rounded-full">
+          로그인
+        </Button>
+      </Link>
+    );
+  }
+
+  return (
+    <header className="w-full">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
+        <div className="flex items-center gap-24">
+          <Link href="/" className="flex items-center gap-2">
+            <CheckSquare className="h-8 w-8 text-primary" />
+            <h1 className="text-xl font-bold">TodoList</h1>
+          </Link>
+          <NavLinks pathname={pathname} />
+        </div>
+        {isLogin ? <UserMenu /> : <LoginButton />}
+      </div>
     </header>
   );
 }

@@ -1,8 +1,9 @@
 ## Skill Set
 
 1. NextJS
-2. TailwindCSS + Shadcn + Magic UI + Lucide Icons
-3. Supabase
+2. Zustand
+3. TailwindCSS + Shadcn + Magic UI + Lucide Icons
+4. Supabase
 
 <br/>
 
