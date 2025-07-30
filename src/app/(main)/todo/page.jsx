@@ -45,7 +45,6 @@ import { ko } from "date-fns/locale";
 import data from "./data.json";
 
 import { useState } from "react";
-import { Separator } from "@/components/ui/separator";
 
 export default function TodoPage() {
   return (
@@ -110,8 +109,26 @@ function TodoFilters({ todos }) {
   const pending = todos.filter((t) => !t.completed).length;
   const completed = todos.filter((t) => t.completed).length;
 
+  const [dateRange, setDateRange] = useState({ from: null, to: null });
+
   return (
     <div className="flex items-center gap-2">
+      <Popover>
+        <PopoverTrigger asChild>
+          <Button className="h-12 w-12 p-0" variant="ghost">
+            <CalendarIcon className="w-4 h-4" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="py-2 flex justify-center" align="start">
+          <Calendar
+            mode="range"
+            selected={dateRange}
+            onSelect={setDateRange}
+            locale={ko}
+            initialFocus
+          />
+        </PopoverContent>
+      </Popover>
       <FilterButton
         active={activeFilter === "all"}
         color="blue"
