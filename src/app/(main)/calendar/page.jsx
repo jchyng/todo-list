@@ -30,6 +30,7 @@ import {
   getPrevMonthDate,
 } from "@/lib/dateUtils";
 import todos from "./data.json";
+import NumberTicker from "@/components/magicui/number-ticker";
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -59,7 +60,6 @@ export default function CalendarPage() {
   };
 
   const isOverdue = (todo) => {
-    if (todo.completed) return false;
     if (!todo.dueDate) return false;
     const due = new Date(todo.dueDate);
     return due < new Date();
@@ -161,7 +161,9 @@ function CalendarStats({ todos, currentDate, isOverdue }) {
               </div>
               <div>
                 {/* 숫자 폰트 크기 확대 */}
-                <p className="text-2xl font-bold text-slate-900">{value}</p>
+                <p className="text-2xl font-bold text-slate-900">
+                  <NumberTicker value={value} />
+                </p>
                 <p className="text-sm text-slate-600">{label}</p>
               </div>
             </div>
