@@ -45,17 +45,18 @@ import { ko } from "date-fns/locale";
 import data from "./data.json";
 
 import { useState } from "react";
+import { Separator } from "@/components/ui/separator";
 
 export default function TodoPage() {
   return (
     <div className="flex flex-col gap-6 ">
-      <AddTodo />
-      <TodoList todos={data} />
+      <AddTodoCard />
+      <TodoListCard todos={data} />
     </div>
   );
 }
 
-function AddTodo() {
+function AddTodoCard() {
   const [task, setTask] = useState("");
 
   const handleAdd = () => {
@@ -84,18 +85,25 @@ function AddTodo() {
   );
 }
 
-function TodoList({ todos }) {
+function TodoListCard({ todos }) {
   return (
     <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <TodoListHeader todos={todos} />
-        <TodoListMain todos={todos} />
+      <CardHeader>
+        <CardTitle>
+          <div className="flex justify-between items-center">
+            <span>작업 목록</span>
+            <TodoFilters todos={todos} />
+          </div>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="p-0 border-t">
+        <TodoList todos={todos} />
       </CardContent>
     </Card>
   );
 }
 
-function TodoListHeader({ todos }) {
+function TodoFilters({ todos }) {
   const [activeFilter, setActiveFilter] = useState("all");
 
   const total = todos.length;
@@ -103,32 +111,28 @@ function TodoListHeader({ todos }) {
   const completed = todos.filter((t) => t.completed).length;
 
   return (
-    <div className="p-6 border-b flex items-center justify-between">
-      <h2 className="text-lg font-semibold">할 일 목록</h2>
-
-      <div className="flex items-center gap-2">
-        <FilterButton
-          active={activeFilter === "all"}
-          color="blue"
-          label="전체"
-          count={total}
-          onClick={() => setActiveFilter("all")}
-        />
-        <FilterButton
-          active={activeFilter === "pending"}
-          color="amber"
-          label="미완료"
-          count={pending}
-          onClick={() => setActiveFilter("pending")}
-        />
-        <FilterButton
-          active={activeFilter === "completed"}
-          color="emerald"
-          label="완료"
-          count={completed}
-          onClick={() => setActiveFilter("completed")}
-        />
-      </div>
+    <div className="flex items-center gap-2">
+      <FilterButton
+        active={activeFilter === "all"}
+        color="blue"
+        label="전체"
+        count={total}
+        onClick={() => setActiveFilter("all")}
+      />
+      <FilterButton
+        active={activeFilter === "pending"}
+        color="amber"
+        label="미완료"
+        count={pending}
+        onClick={() => setActiveFilter("pending")}
+      />
+      <FilterButton
+        active={activeFilter === "completed"}
+        color="emerald"
+        label="완료"
+        count={completed}
+        onClick={() => setActiveFilter("completed")}
+      />
     </div>
   );
 }
@@ -175,7 +179,7 @@ function FilterButton({ active, color, label, count, onClick }) {
   );
 }
 
-function TodoListMain({ todos }) {
+function TodoList({ todos }) {
   if (todos.length === 0) return <EmptyState />;
 
   return (
