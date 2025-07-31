@@ -2,19 +2,58 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MountainIcon, Settings, LogOut, CheckSquare } from "lucide-react";
+import { useState, useEffect } from "react";
+import {
+  MountainIcon,
+  Settings,
+  LogOut,
+  CheckSquare,
+  UserRound,
+  CreditCard,
+} from "lucide-react";
+import { signOut } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 export default function Header() {
-  const isLogin = true; // TODO: 로그인 여부를 확인하는 로직 필요
   const pathname = usePathname();
+  const [user, setUser] = useState(null);
+  const [isLogin, setIsLogin] = useState(false);
+
+  useEffect(() => {
+    // 쿠키에서 user_info 가져오기
+    const getUserInfo = () => {
+      const userInfoCookie = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("user_info="));
+
+      if (userInfoCookie) {
+        try {
+          const userInfo = JSON.parse(
+            decodeURIComponent(userInfoCookie.split("=")[1])
+          );
+          setUser(userInfo);
+          setIsLogin(true);
+        } catch (error) {
+          console.error("Failed to parse user info:", error);
+          setIsLogin(false);
+        }
+      } else {
+        setIsLogin(false);
+      }
+    };
+
+    getUserInfo();
+  }, []);
 
   function NavLink({ href, name }) {
     return (
@@ -45,22 +84,54 @@ export default function Header() {
     return (
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="rounded-full">
-            <Avatar>
-              <AvatarImage src="https://github.com/shadcn.png" alt="@shadcn" />
-              <AvatarFallback>CN</AvatarFallback>
+          <button className="flex items-center gap-2">
+            <Avatar className="h-8 w-8 rounded-full">
+              <AvatarImage src={user?.avatar_url || ""} alt={user?.full_name} />
+              <AvatarFallback className="rounded-lg">
+                {user?.full_name?.charAt(0)?.toUpperCase()}
+              </AvatarFallback>
             </Avatar>
-          </Button>
+          </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem>
-            <Settings className="mr-2 h-4 w-4" />
-            <span>설정</span>
-          </DropdownMenuItem>
-          <DropdownMenuItem>
-            <LogOut className="mr-2 h-4 w-4 text-red-400" />
-            <span className="text-red-400">로그아웃</span>
-          </DropdownMenuItem>
+        <DropdownMenuContent
+          className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
+          side="bottom"
+          sideOffset={4}
+          align="end"
+        >
+          <DropdownMenuLabel className="p-0 font-normal">
+            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+              <Avatar className="h-8 w-8 rounded-lg">
+                <AvatarImage
+                  src={user?.avatar_url || ""}
+                  alt={user?.full_name}
+                />
+                <AvatarFallback className="rounded-lg">
+                  {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
+                </AvatarFallback>
+              </Avatar>
+              <div className="grid flex-1 text-left text-sm leading-tight">
+                <span className="truncate font-medium">
+                  {user?.full_name || "사용자"}
+                </span>
+                <span className="text-muted-foreground truncate text-xs">
+                  {user?.email}
+                </span>
+              </div>
+            </div>
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuGroup>
+            <DropdownMenuItem>
+              <Settings className="text-secondary-foreground" />
+              <span className="text-secondary-foreground">Settings</span>
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => signOut()}>
+              <LogOut className="text-red-500" />
+              <span className="text-red-500">Logout</span>
+            </DropdownMenuItem>
+          </DropdownMenuGroup>
         </DropdownMenuContent>
       </DropdownMenu>
     );
