@@ -23,7 +23,7 @@ import {
   BarChart3,
   TrendingUp,
 } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { TodoItem } from "@/components/TodoItem";
 
 import {
@@ -32,54 +32,97 @@ import {
   getPrevMonthDate,
 } from "@/lib/dateUtils";
 import NumberTicker from "@/components/magicui/number-ticker";
-import todos from "./data.json";
+import { fetchCalendarTodos, updateTodo, deleteTodo, toggleTodoComplete } from "@/lib/api";
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
+  const [todosByDate, setTodosByDate] = useState({});
+  const [monthlyStats, setMonthlyStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // 달력에 표시할 날짜 배열 생성
   const calendarDays = useMemo(() => {
     return getCalendarDays(currentDate);
   }, [currentDate]);
 
-  const monthlyTodos = useMemo(() => {
-    const year = currentDate.getFullYear();
-    const month = currentDate.getMonth();
+  // 월별 할 일 데이터 로드
+  const loadMonthlyData = async () => {
+    try {
+      setLoading(true);
+      
+      // 달력의 실제 시작일과 종료일 계산 (달력에 표시되는 모든 날짜)
+      const calendarDays = getCalendarDays(currentDate);
+      const startDate = calendarDays[0]; // 첫 번째 날짜
+      const endDate = calendarDays[calendarDays.length - 1]; // 마지막 날짜
+      
+      // YYYY-MM-DD 형식으로 변환
+      const startDateStr = startDate.toISOString().split('T')[0];
+      const endDateStr = endDate.toISOString().split('T')[0];
+      
+      // 현재 월 정보 (통계 계산용)
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth(); // 0-11
+      
+      // 새로운 달력 API 사용 (통계는 현재 월만 계산)
+      const { todosByDate: calendarData, stats } = await fetchCalendarTodos(startDateStr, endDateStr, year, month);
+      
+      setTodosByDate(calendarData);
+      setMonthlyStats(stats);
+      setError(null);
+    } catch (err) {
+      console.error('월별 데이터 로드 실패:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return todos.filter((todo) => {
-      const dateString = todo.completed ? todo.updatedAt : todo.dueDate;
-      if (!dateString) {
-        return false;
-      }
-      const date = new Date(dateString);
-      return date.getFullYear() === year && date.getMonth() === month;
-    });
-  }, [currentDate]);
 
-  // 완료된 작업(완료 날짜별) + 미완료 작업(마감일별) 그룹화
-  const todosByDate = useMemo(() => {
-    const grouped = {};
+  // 할 일 수정
+  const handleUpdateTodo = async (id, updateData) => {
+    try {
+      const updatedTodo = await updateTodo(id, updateData);
+      // 데이터 다시 로드 (날짜가 변경될 수 있으므로)
+      await loadMonthlyData();
+    } catch (err) {
+      console.error('할 일 수정 실패:', err);
+      throw err;
+    }
+  };
 
-    todos.forEach((todo) => {
-      let dateKey = null;
+  // 할 일 삭제
+  const handleDeleteTodo = async (id) => {
+    try {
+      await deleteTodo(id);
+      // 해당 할 일을 todosByDate에서 제거
+      setTodosByDate(prev => {
+        const newTodosByDate = { ...prev };
+        Object.keys(newTodosByDate).forEach(dateKey => {
+          newTodosByDate[dateKey] = newTodosByDate[dateKey].filter(todo => todo._id !== id);
+          if (newTodosByDate[dateKey].length === 0) {
+            delete newTodosByDate[dateKey];
+          }
+        });
+        return newTodosByDate;
+      });
+    } catch (err) {
+      console.error('할 일 삭제 실패:', err);
+      throw err;
+    }
+  };
 
-      // 완료된 작업이고 완료 날짜가 있는 경우
-      if (todo.completed && todo.updatedAt) {
-        dateKey = todo.updatedAt;
-      }
-      // 미완료 작업이고 마감일이 있는 경우
-      else if (!todo.completed && todo.dueDate) {
-        dateKey = todo.dueDate;
-      }
-
-      if (dateKey) {
-        if (!grouped[dateKey]) grouped[dateKey] = [];
-        grouped[dateKey].push(todo);
-      }
-    });
-
-    return grouped;
-  }, []);
+  // 완료 상태 토글
+  const handleToggleComplete = async (id) => {
+    try {
+      const updatedTodo = await toggleTodoComplete(id);
+      // 완료 상태가 변경되면 데이터 다시 로드 (날짜 분류가 변경될 수 있으므로)
+      await loadMonthlyData();
+    } catch (err) {
+      console.error('완료 상태 변경 실패:', err);
+      throw err;
+    }
+  };
 
   const handlePrevMonth = () => {
     setCurrentDate(getPrevMonthDate(currentDate));
@@ -89,6 +132,27 @@ export default function CalendarPage() {
     setCurrentDate(getNextMonthDate(currentDate));
   };
 
+  // 월이 변경될 때마다 데이터 로드
+  useEffect(() => {
+    loadMonthlyData();
+  }, [currentDate]);
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <CalendarHeader
+          currentDate={currentDate}
+          onPrevMonth={handlePrevMonth}
+          onNextMonth={handleNextMonth}
+        />
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">달력 데이터를 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <CalendarHeader
@@ -96,11 +160,19 @@ export default function CalendarPage() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
       />
-      <CalendarStats todos={monthlyTodos} />
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-red-600 text-sm">오류: {error}</p>
+        </div>
+      )}
+      <CalendarStats stats={monthlyStats} />
       <CalendarGrid
         days={calendarDays}
         currentDate={currentDate}
         todosByDate={todosByDate}
+        onUpdateTodo={handleUpdateTodo}
+        onDeleteTodo={handleDeleteTodo}
+        onToggleComplete={handleToggleComplete}
       />
     </div>
   );
@@ -161,24 +233,23 @@ function PercentageCard({ icon, label, value, colorClass }) {
   );
 }
 
-function CalendarStats({ todos }) {
-  const stats = useMemo(() => {
-    const completed = todos.filter((todo) => todo.completed).length;
-    const incomplete = todos.filter(
-      (todo) => !todo.completed && todo.dueDate
-    ).length;
-    const overdue = todos.filter((todo) => {
-      if (!todo.dueDate || todo.completed) return false;
-      const today = new Date();
-      const dueDate = new Date(todo.dueDate);
-      return dueDate < today;
-    }).length;
-    const total = completed + incomplete;
-    const completionRate =
-      total > 0 ? Math.round((completed / total) * 100) : 0;
-
-    return { completed, incomplete, overdue, total, completionRate };
-  }, [todos]);
+function CalendarStats({ stats }) {
+  if (!stats) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+        {[...Array(5)].map((_, i) => (
+          <Card key={i}>
+            <CardContent className="px-4">
+              <div className="animate-pulse">
+                <div className="h-4 bg-gray-200 rounded mb-2"></div>
+                <div className="h-6 bg-gray-200 rounded"></div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
@@ -191,7 +262,7 @@ function CalendarStats({ todos }) {
       <StatCard
         icon={<Clock className="h-5 w-5 text-amber-500" />}
         label="예정"
-        value={stats.incomplete - stats.overdue}
+        value={stats.upcoming}
         colorClass="text-amber-600"
       />
       <StatCard
@@ -216,7 +287,7 @@ function CalendarStats({ todos }) {
   );
 }
 
-function CalendarGrid({ days, currentDate, todosByDate }) {
+function CalendarGrid({ days, currentDate, todosByDate, onUpdateTodo, onDeleteTodo, onToggleComplete }) {
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
   const today = new Date().toDateString();
 
@@ -250,7 +321,14 @@ function CalendarGrid({ days, currentDate, todosByDate }) {
           const dayTodos = todosByDate[dateKey] || [];
 
           return (
-            <CalendarDialog key={index} date={date} todos={dayTodos}>
+            <CalendarDialog 
+              key={index} 
+              date={date} 
+              todos={dayTodos}
+              onUpdateTodo={onUpdateTodo}
+              onDeleteTodo={onDeleteTodo}
+              onToggleComplete={onToggleComplete}
+            >
               <div
                 className={cn(
                   "h-32 p-2 border-b border-r cursor-pointer transition-colors",
@@ -335,7 +413,7 @@ function CalendarGrid({ days, currentDate, todosByDate }) {
   );
 }
 
-function CalendarDialog({ date, todos, children }) {
+function CalendarDialog({ date, todos, children, onUpdateTodo, onDeleteTodo, onToggleComplete }) {
   if (!date) return null;
 
   const formattedDate = `${date.getFullYear()}년 ${
@@ -381,20 +459,11 @@ function CalendarDialog({ date, todos, children }) {
             {todos && todos.length > 0 ? (
               todos.map((todo) => (
                 <TodoItem
-                  key={todo.id}
+                  key={todo._id}
                   todo={todo}
-                  onToggleComplete={(id, completed) => {
-                    console.log("Toggle complete:", id, completed);
-                    // TODO: API 호출로 완료 상태 업데이트
-                  }}
-                  onDelete={(id) => {
-                    console.log("Delete todo:", id);
-                    // TODO: API 호출로 삭제
-                  }}
-                  onUpdate={(id, updatedData) => {
-                    console.log("Update todo:", id, updatedData);
-                    // TODO: API 호출로 업데이트
-                  }}
+                  onToggleComplete={onToggleComplete}
+                  onDelete={onDeleteTodo}
+                  onUpdate={onUpdateTodo}
                 />
               ))
             ) : (

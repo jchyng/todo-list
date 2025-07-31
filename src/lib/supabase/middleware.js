@@ -54,7 +54,8 @@ export async function updateSession(request) {
   } else {
     supabaseResponse.cookies.delete("user_info");
 
-    if (!path.startsWith("/login")) return redirect(request, "/login");
+    if (!path.startsWith("/login") && !path.startsWith("/"))
+      return redirect(request, "/login");
   }
 
   return supabaseResponse;

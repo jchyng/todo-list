@@ -56,13 +56,13 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
 
   const handleToggleComplete = () => {
     if (onToggleComplete) {
-      onToggleComplete(todo.id, !completed);
+      onToggleComplete(todo._id, !completed);
     }
   };
 
   const handleDelete = () => {
     if (onDelete) {
-      onDelete(todo.id);
+      onDelete(todo._id);
     }
   };
 
@@ -150,7 +150,10 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel>취소</AlertDialogCancel>
-              <AlertDialogAction className="bg-red-500 hover:bg-red-600" onClick={handleDelete}>
+              <AlertDialogAction
+                className="bg-red-500 hover:bg-red-600"
+                onClick={handleDelete}
+              >
                 삭제
               </AlertDialogAction>
             </AlertDialogFooter>
@@ -171,11 +174,15 @@ function EditTodoDialog({ todo, children, onUpdate }) {
   });
   const [isOpen, setIsOpen] = useState(false);
 
-  const handleSave = () => {
-    if (onUpdate) {
-      onUpdate(todo.id, form);
+  const handleSave = async () => {
+    try {
+      if (onUpdate) {
+        await onUpdate(todo._id, form);
+      }
+      setIsOpen(false);
+    } catch (err) {
+      alert("할 일 수정에 실패했습니다: " + err.message);
     }
-    setIsOpen(false);
   };
 
   // 시간 옵션 생성 (00:00 ~ 23:30, 30분 단위)
@@ -226,53 +233,6 @@ function EditTodoDialog({ todo, children, onUpdate }) {
               }
               placeholder="할 일에 대한 설명을 입력하세요"
             />
-          </div>
-
-          {/* 시작 날짜 & 시간 */}
-          <div className="grid gap-2">
-            <Label>시작 날짜</Label>
-            <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className="w-[120px] justify-start text-left font-normal"
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {form.startDate
-                      ? format(form.startDate, "M월 d일", { locale: ko })
-                      : "날짜 선택"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="py-2 flex justify-center"
-                  align="start"
-                >
-                  <Calendar
-                    mode="single"
-                    selected={form.startDate}
-                    onSelect={(date) => setForm({ ...form, startDate: date })}
-                    initialFocus
-                    locale={ko}
-                  />
-                </PopoverContent>
-              </Popover>
-              <Select
-                value={form.startDate ? format(form.startDate, "HH:mm") : ""}
-                onValueChange={(val) => handleTimeChange("startDate", val)}
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue placeholder="시간 선택" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timeOptions.map((t) => (
-                    <SelectItem key={t} value={t}>
-                      {t}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
           </div>
 
           {/* 마감 날짜 & 시간 */}
@@ -336,7 +296,11 @@ function EditTodoDialog({ todo, children, onUpdate }) {
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => setIsOpen(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setIsOpen(false)}
+          >
             취소
           </Button>
           <Button type="button" onClick={handleSave}>
