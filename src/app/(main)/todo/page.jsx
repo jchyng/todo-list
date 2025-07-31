@@ -207,20 +207,6 @@ function TodoList({ todos }) {
   );
 }
 
-function EmptyState() {
-  return (
-    <div className="p-12 text-center">
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-        <ClipboardList className="w-8 h-8 text-muted-foreground" />
-      </div>
-      <p className="text-muted-foreground font-medium">할 일이 없습니다</p>
-      <p className="text-sm text-muted-foreground mt-1">
-        새로운 할 일을 추가해보세요
-      </p>
-    </div>
-  );
-}
-
 function TodoItem({ todo }) {
   const { title, description, completed, dueDate, updatedAt } = todo;
 
@@ -238,41 +224,43 @@ function TodoItem({ todo }) {
       </Button>
 
       {/* 본문 */}
-      <div className="flex-1 min-w-0">
-        <p
-          className={`font-medium ${
-            completed ? "line-through text-muted-foreground" : ""
-          }`}
-        >
-          {title}
-        </p>
-        <p className="text-sm text-muted-foreground mt-1">{description}</p>
+      <EditTodoDialog todo={todo}>
+        <div className="flex-1 min-w-0 cursor-pointer">
+          <p
+            className={`font-medium ${
+              completed ? "line-through text-muted-foreground" : ""
+            }`}
+          >
+            {title}
+          </p>
+          <p className="text-sm text-muted-foreground mt-1">{description}</p>
 
-        <div className="flex items-center gap-6 mt-2 text-sm text-muted-foreground">
-          {dueDate && (
-            <span className="flex items-center gap-1.5 text-red-400 font-medium">
-              <AlarmCheck className="w-4 h-4" />
-              {new Date(dueDate).toLocaleString("ko-KR", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
-          {completed && updatedAt && (
-            <span className="flex items-center gap-1.5 text-emerald-600/90 font-medium">
-              <BadgeCheck className="w-4 h-4" />
-              {new Date(updatedAt).toLocaleString("ko-KR", {
-                month: "short",
-                day: "numeric",
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
-            </span>
-          )}
+          <div className="flex items-center gap-6 mt-2 text-sm text-muted-foreground">
+            {dueDate && (
+              <span className="flex items-center gap-1.5 text-red-400 font-medium">
+                <AlarmCheck className="w-4 h-4" />
+                {new Date(dueDate).toLocaleString("ko-KR", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+            {completed && updatedAt && (
+              <span className="flex items-center gap-1.5 text-emerald-600/90 font-medium">
+                <BadgeCheck className="w-4 h-4" />
+                {new Date(updatedAt).toLocaleString("ko-KR", {
+                  month: "short",
+                  day: "numeric",
+                  hour: "2-digit",
+                  minute: "2-digit",
+                })}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      </EditTodoDialog>
 
       {/* 액션 버튼 */}
       <div className="flex items-center gap-2">
@@ -286,15 +274,6 @@ function TodoItem({ todo }) {
         >
           {completed ? "완료" : "진행중"}
         </Badge>
-        <EditTodoDialog todo={todo}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <Edit className="w-4 h-4" />
-          </Button>
-        </EditTodoDialog>
         <Button
           variant="ghost"
           size="icon"
@@ -303,6 +282,20 @@ function TodoItem({ todo }) {
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="p-12 text-center">
+      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+        <ClipboardList className="w-8 h-8 text-muted-foreground" />
+      </div>
+      <p className="text-muted-foreground font-medium">할 일이 없습니다</p>
+      <p className="text-sm text-muted-foreground mt-1">
+        새로운 할 일을 추가해보세요
+      </p>
     </div>
   );
 }
