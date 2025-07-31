@@ -38,8 +38,8 @@ export async function GET(request, { params }) {
     // MongoDB 연결
     await connectDB();
 
-    // 할 일 조회 (본인 것만)
-    const todo = await Todo.findOne({ _id: id, userId: user.id });
+    // 할 일 조회 (본인 것만, 삭제되지 않은 것만)
+    const todo = await Todo.findOne({ _id: id, userId: user.id, isDeleted: false });
 
     if (!todo) {
       return createErrorResponse(ERROR_MESSAGES.RESOURCE_NOT_FOUND, 404);
@@ -99,9 +99,9 @@ export async function PUT(request, { params }) {
     if (dueDate !== undefined)
       updateData.dueDate = dueDate ? new Date(dueDate) : null;
 
-    // 할 일 업데이트 (본인 것만)
+    // 할 일 업데이트 (본인 것만, 삭제되지 않은 것만)
     const updatedTodo = await Todo.findOneAndUpdate(
-      { _id: id, userId: user.id },
+      { _id: id, userId: user.id, isDeleted: false },
       updateData,
       { new: true, runValidators: true }
     );
@@ -152,18 +152,18 @@ export async function DELETE(request, { params }) {
     // MongoDB 연결
     await connectDB();
 
-    // 할 일 삭제 (본인 것만)
-    const deletedTodo = await Todo.findOneAndDelete({
-      _id: id,
-      userId: user.id,
-    });
-
-    if (!deletedTodo) {
+    // 할 일 논리적 삭제 (본인 것만, 삭제되지 않은 것만)
+    const todo = await Todo.findOne({ _id: id, userId: user.id, isDeleted: false });
+    
+    if (!todo) {
       return NextResponse.json(
         { error: "할 일을 찾을 수 없습니다" },
         { status: 404 }
       );
     }
+    
+    const deletedTodo = await todo.softDelete();
+
 
     return createSuccessResponse(deletedTodo, 200, "할 일이 삭제되었습니다");
   } catch (error) {
@@ -198,8 +198,8 @@ export async function PATCH(request, { params }) {
     // MongoDB 연결
     await connectDB();
 
-    // 할 일 찾기 (본인 것만)
-    const todo = await Todo.findOne({ _id: id, userId: user.id });
+    // 할 일 찾기 (본인 것만, 삭제되지 않은 것만)
+    const todo = await Todo.findOne({ _id: id, userId: user.id, isDeleted: false });
 
     if (!todo) {
       return createErrorResponse(ERROR_MESSAGES.RESOURCE_NOT_FOUND, 404);

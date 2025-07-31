@@ -44,9 +44,10 @@ export async function GET(request) {
     startDate.setHours(0, 0, 0, 0);
     endDate.setHours(23, 59, 59, 999);
 
-    // 해당 월의 모든 할 일 조회 (완료된 작업 + 마감일이 있는 미완료 작업)
+    // 해당 월의 모든 할 일 조회 (삭제되지 않은 것만: 완료된 작업 + 마감일이 있는 미완료 작업)
     const todos = await Todo.find({
       userId: user.id,
+      isDeleted: false,
       $or: [
         // 완료된 작업 (완료일 기준)
         {

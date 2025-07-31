@@ -29,9 +29,10 @@ export async function GET(request) {
     const todayEnd = new Date(today);
     todayEnd.setHours(23, 59, 59, 999); // 오늘 끝
 
-    // 조건에 맞는 할 일 조회
+    // 조건에 맞는 할 일 조회 (삭제되지 않은 것만)
     const todos = await Todo.find({
       userId: user.id,
+      isDeleted: false,
       $or: [
         // 마감일이 없는 모든 작업
         { dueDate: { $exists: false } },

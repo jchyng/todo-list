@@ -115,6 +115,7 @@ export async function POST(request) {
       title,
       description: description || "",
       dueDate: dueDate ? new Date(dueDate) : null,
+      isDeleted: false, // 명시적으로 설정
     });
 
     const savedTodo = await newTodo.save();
