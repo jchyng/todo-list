@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -53,10 +53,44 @@ import { ko } from "date-fns/locale";
 // Reusable TodoItem component
 export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
   const { title, description, completed, dueDate, updatedAt } = todo;
+  
+  // 낙관적 UI를 위한 로컬 상태
+  const [optimisticCompleted, setOptimisticCompleted] = useState(completed);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [justCompleted, setJustCompleted] = useState(false);
 
-  const handleToggleComplete = () => {
-    if (onToggleComplete) {
-      onToggleComplete(todo._id, !completed);
+  // prop이 변경될 때 낙관적 상태 동기화
+  useEffect(() => {
+    setOptimisticCompleted(completed);
+  }, [completed]);
+
+  const handleToggleComplete = async () => {
+    if (!onToggleComplete || isUpdating) return;
+
+    const newCompleted = !optimisticCompleted;
+    
+    // 즉시 UI 업데이트 (낙관적)
+    setOptimisticCompleted(newCompleted);
+    setIsUpdating(true);
+    
+    // 완료 시 특별한 애니메이션 트리거
+    if (newCompleted) {
+      setJustCompleted(true);
+      // 애니메이션 완료 후 상태 리셋
+      setTimeout(() => setJustCompleted(false), 1200);
+    }
+
+    try {
+      // 비동기 API 호출
+      await onToggleComplete(todo._id, newCompleted);
+    } catch (error) {
+      // 실패 시 롤백
+      setOptimisticCompleted(completed);
+      setJustCompleted(false);
+      console.error('할 일 상태 변경 실패:', error);
+      // TODO: 사용자에게 에러 알림 (토스트 등)
+    } finally {
+      setIsUpdating(false);
     }
   };
 
@@ -67,26 +101,50 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
   };
 
   return (
-    <div className="p-6 hover:bg-muted/50 transition-colors flex items-start gap-4">
+    <div className={`p-6 hover:bg-muted/50 transition-all duration-500 flex items-start gap-4 ${
+      justCompleted 
+        ? "animate-pulse bg-emerald-50/50 shadow-lg shadow-emerald-100/50 scale-[1.02]" 
+        : ""
+    }`}>
       {/* 체크박스 */}
-      <Button
-        variant="ghost"
-        size="sm"
-        className={`w-5 h-5 p-0 rounded flex items-center justify-center ${
-          completed ? "bg-emerald-500" : "border-2 border-muted-foreground/30"
-        }`}
-        onClick={handleToggleComplete}
-      >
-        {completed && <Check className="w-3 h-3 text-white" />}
-      </Button>
+      <div className="relative">
+        <Button
+          variant="ghost"
+          size="sm"
+          className={`w-5 h-5 p-0 rounded flex items-center justify-center transition-all duration-300 ${
+            optimisticCompleted 
+              ? "bg-emerald-500 shadow-lg shadow-emerald-200/60" 
+              : "border-2 border-muted-foreground/30 hover:border-emerald-300"
+          } ${isUpdating ? "opacity-75" : ""}`}
+          onClick={handleToggleComplete}
+          disabled={isUpdating}
+        >
+          {optimisticCompleted && (
+            <Check 
+              className={`w-3 h-3 text-white transition-all duration-200 ${
+                justCompleted 
+                  ? "scale-110" 
+                  : "animate-in fade-in-50 zoom-in-75"
+              }`} 
+            />
+          )}
+        </Button>
+        
+        {/* 리플 효과 */}
+        {justCompleted && (
+          <div className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
+        )}
+      </div>
 
       {/* 본문 */}
       <EditTodoDialog todo={todo} onUpdate={onUpdate}>
         <div className="flex-1 min-w-0 cursor-pointer">
           <p
-            className={`font-medium ${
-              completed ? "line-through text-muted-foreground" : ""
-            }`}
+            className={`font-medium transition-all duration-500 ease-out ${
+              optimisticCompleted 
+                ? "line-through text-muted-foreground opacity-70 scale-[0.98]" 
+                : "text-foreground opacity-100 scale-100"
+            } ${justCompleted ? "animate-pulse" : ""}`}
           >
             {title}
           </p>
@@ -122,14 +180,16 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
       {/* 액션 버튼 */}
       <div className="flex items-center gap-2">
         <Badge
-          variant={completed ? "default" : "secondary"}
-          className={
-            completed
-              ? "bg-emerald-100 text-emerald-800"
+          variant={optimisticCompleted ? "default" : "secondary"}
+          className={`transition-all duration-500 ease-out transform ${
+            optimisticCompleted
+              ? "bg-emerald-100 text-emerald-800 shadow-md shadow-emerald-100/50"
               : "bg-amber-100 text-amber-800"
-          }
+          } ${isUpdating ? "opacity-75" : ""} ${
+            justCompleted ? "animate-bounce scale-105" : ""
+          }`}
         >
-          {completed ? "완료" : "진행중"}
+          {optimisticCompleted ? "완료" : "진행중"}
         </Badge>
         <AlertDialog>
           <AlertDialogTrigger asChild>
