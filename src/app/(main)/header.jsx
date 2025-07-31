@@ -20,36 +20,44 @@ import {
   DropdownMenuGroup,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import SettingsModal from "@/components/SettingsModal";
+import { createClient } from "@/lib/supabase/client";
 
 export default function Header() {
   const pathname = usePathname();
   const [user, setUser] = useState(null);
   const [isLogin, setIsLogin] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
 
   useEffect(() => {
-    // 쿠키에서 user_info 가져오기
-    const getUserInfo = () => {
-      const userInfoCookie = document.cookie
-        .split("; ")
-        .find((row) => row.startsWith("user_info="));
+    const getUser = async () => {
+      const supabase = createClient();
+      
+      try {
+        const { data: { user }, error } = await supabase.auth.getUser();
+        
+        if (error) {
+          console.error("Error getting user:", error);
+          setUser(null);
+          setIsLogin(false);
+          return;
+        }
 
-      if (userInfoCookie) {
-        try {
-          const userInfo = JSON.parse(
-            decodeURIComponent(userInfoCookie.split("=")[1])
-          );
-          setUser(userInfo);
+        if (user) {
+          setUser(user);
           setIsLogin(true);
-        } catch (error) {
-          console.error("Failed to parse user info:", error);
+        } else {
+          setUser(null);
           setIsLogin(false);
         }
-      } else {
+      } catch (error) {
+        console.error("Failed to get user info:", error);
+        setUser(null);
         setIsLogin(false);
       }
     };
 
-    getUserInfo();
+    getUser();
   }, []);
 
   function NavLink({ href, name }) {
@@ -83,9 +91,9 @@ export default function Header() {
         <DropdownMenuTrigger asChild>
           <button className="flex items-center gap-2">
             <Avatar className="h-8 w-8 rounded-full">
-              <AvatarImage src={user?.avatar_url || ""} alt={user?.full_name} />
+              <AvatarImage src={user?.user_metadata?.avatar_url || ""} alt={user?.user_metadata?.full_name} />
               <AvatarFallback className="rounded-lg">
-                {user?.full_name?.charAt(0)?.toUpperCase()}
+                {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase()}
               </AvatarFallback>
             </Avatar>
           </button>
@@ -100,16 +108,16 @@ export default function Header() {
             <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
               <Avatar className="h-8 w-8 rounded-lg">
                 <AvatarImage
-                  src={user?.avatar_url || ""}
-                  alt={user?.full_name}
+                  src={user?.user_metadata?.avatar_url || ""}
+                  alt={user?.user_metadata?.full_name}
                 />
                 <AvatarFallback className="rounded-lg">
-                  {user?.full_name?.charAt(0)?.toUpperCase() || "U"}
+                  {user?.user_metadata?.full_name?.charAt(0)?.toUpperCase() || user?.email?.charAt(0)?.toUpperCase() || "U"}
                 </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-medium">
-                  {user?.full_name || "사용자"}
+                  {user?.user_metadata?.full_name || user?.email || "사용자"}
                 </span>
                 <span className="text-muted-foreground truncate text-xs">
                   {user?.email}
@@ -119,7 +127,7 @@ export default function Header() {
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setSettingsOpen(true)}>
               <Settings className="text-secondary-foreground" />
               <span className="text-secondary-foreground">Settings</span>
             </DropdownMenuItem>
@@ -156,6 +164,12 @@ export default function Header() {
         </div>
         {isLogin ? <UserMenu /> : <LoginButton />}
       </div>
+      
+      <SettingsModal 
+        open={settingsOpen} 
+        onOpenChange={setSettingsOpen} 
+        user={user} 
+      />
     </header>
   );
 }
