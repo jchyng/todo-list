@@ -1,26 +1,74 @@
+"use client";
+
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardContent, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { googleLogin } from "./actions";
+import { AlertTriangle } from "lucide-react";
 
 export default function LoginPage() {
+  const [agreed, setAgreed] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const formRef = useRef(null);
+
+  const handleLoginClick = (e) => {
+    if (!agreed) {
+      e.preventDefault();
+      setShowAlert(true);
+    } else {
+      formRef.current.requestSubmit();
+    }
+  };
+
   return (
     <div className="flex h-screen items-center justify-center bg-gray-50">
-      <Card className="w-[350px] shadow-lg">
+      <Card className="w-[400px] shadow-lg">
         <CardHeader>
-          <CardTitle className="text-center text-xl font-semibold">
-            로그인
+          <CardTitle className="text-center text-2xl font-bold tracking-tight">
+            Todo-list 로그인
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4 items-center">
-          <form action={googleLogin}>
+        <CardContent className="flex flex-col gap-6 items-center">
+          <p className="text-center text-gray-600">
+            Google 계정으로 간편하게 로그인하세요.
+          </p>
+          {showAlert && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>동의 필요</AlertTitle>
+              <AlertDescription>
+                로그인을 계속하려면 개인정보 수집 및 이용에 동의해야 합니다.
+              </AlertDescription>
+            </Alert>
+          )}
+          <form ref={formRef} action={googleLogin} className="w-full">
             <Button
-              type="submit"
+              type="button"
               variant="outline"
-              className="flex items-center gap-2"
+              className="w-full flex items-center justify-center gap-3 py-6 text-lg"
+              onClick={handleLoginClick}
             >
-              {/* 구글 로고 SVG 직접 작성 */}
               <svg
-                className="h-5 w-5"
+                className="h-6 w-6"
                 viewBox="0 0 533.5 544.3"
                 xmlns="http://www.w3.org/2000/svg"
               >
@@ -45,6 +93,59 @@ export default function LoginPage() {
             </Button>
           </form>
         </CardContent>
+        <CardFooter className="flex flex-col gap-4">
+          <div className="flex items-center space-x-2">
+            <Checkbox
+              id="terms"
+              checked={agreed}
+              onCheckedChange={() => setAgreed(!agreed)}
+            />
+            <Label htmlFor="terms" className="text-sm text-gray-600">
+              [필수]{" "}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="link" className="p-0 h-auto">
+                    개인정보 수집 및 이용
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>
+                      개인정보 수집 및 이용 동의
+                    </AlertDialogTitle>
+                    <AlertDialogDescription asChild>
+                      <div className="space-y-2 text-left">
+                        <p>
+                          Todo-list 서비스는 다음의 목적을 위해 개인정보를
+                          수집 및 이용합니다.
+                        </p>
+                        <p>
+                          <strong>1. 수집하는 개인정보 항목</strong>
+                          <br />- Google 계정 정보: 이메일 주소, 프로필 사진,
+                          이름
+                        </p>
+                        <p>
+                          <strong>2. 개인정보의 수집 및 이용 목적</strong>
+                          <br />- 회원 식별 및 서비스 이용을 위한 인증
+                          <br />- Todo-list 데이터(할 일, 일정 등) 저장 및 연동
+                        </p>
+                        <p>
+                          <strong>3. 개인정보의 보유 및 이용 기간</strong>
+                          <br />- 회원 탈퇴 시까지 보유하며, 탈퇴 요청 시
+                          즉시 파기합니다.
+                        </p>
+                      </div>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogAction>확인</AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+              에 대한 동의
+            </Label>
+          </div>
+        </CardFooter>
       </Card>
     </div>
   );
