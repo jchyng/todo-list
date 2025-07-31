@@ -60,7 +60,6 @@ function AddTodoCard() {
 
   const handleAdd = () => {
     if (task.trim() === "") return;
-    console.log("새 작업 추가:", task);
     setTask(""); // 입력 초기화
   };
 
@@ -318,7 +317,6 @@ function EditTodoDialog({ todo, children }) {
   });
 
   const handleSave = () => {
-    console.log("저장 데이터:", form);
     // TODO: API 호출
   };
 

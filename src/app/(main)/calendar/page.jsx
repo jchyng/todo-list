@@ -280,7 +280,6 @@ function CalendarGrid({ days, currentDate, todosByDate }) {
                         "bg-green-100/80 text-green-800 border-green-200";
                     } else if (todo.dueDate) {
                       const today = new Date().toDateString();
-                      const dueDate = new Date(todo.dueDate).toDateString();
                       const isOverdue =
                         new Date(todo.dueDate) < new Date(today);
 
