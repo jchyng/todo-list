@@ -55,7 +55,7 @@ export default function LoginPage() {
             <Button
               type="button"
               variant="outline"
-              className="w-full flex items-center justify-center gap-3 py-4 text-md"
+              className="w-full flex items-center justify-center gap-3 py-4 text-sm"
               onClick={handleLoginClick}
               disabled={isLoading}
             >
