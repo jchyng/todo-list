@@ -1,7 +1,7 @@
 "use client";
 
 import { useInView, useMotionValue, useSpring } from "motion/react";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export default function NumberTicker({
   value,
@@ -10,6 +10,7 @@ export default function NumberTicker({
   className,
 }) {
   const ref = useRef(null);
+  const [displayValue, setDisplayValue] = useState("0");
   const motionValue = useMotionValue(direction === "down" ? value : 0);
   const springValue = useSpring(motionValue, {
     damping: 60,
@@ -25,26 +26,20 @@ export default function NumberTicker({
     }
   }, [motionValue, isInView, delay, value, direction]);
 
-  useEffect(
-    () => {
-      if (ref.current) {
-        ref.current.textContent = "0";
-      }
-      springValue.on("change", (latest) => {
-        if (ref.current) {
-          ref.current.textContent = Intl.NumberFormat("en-US").format(
-            latest.toFixed(0)
-          );
-        }
-      });
-    },
-    [springValue]
-  );
+  useEffect(() => {
+    const unsubscribe = springValue.on("change", (latest) => {
+      setDisplayValue(Intl.NumberFormat("en-US").format(latest.toFixed(0)));
+    });
+    
+    return unsubscribe;
+  }, [springValue]);
 
   return (
     <span
       className={`inline-block tabular-nums ${className}`}
       ref={ref}
-    />
+    >
+      {displayValue}
+    </span>
   );
 }
