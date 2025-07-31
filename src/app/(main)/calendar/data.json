@@ -1,38 +1,98 @@
 [
   {
     "id": 1,
-    "title": "회의 준비 ㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇㅇ",
-    "date": "2025-07-05",
+    "title": "회의 준비",
     "completed": false
   },
   {
     "id": 2,
     "title": "코드 리뷰",
-    "date": "2025-07-05",
-    "completed": true
+    "completed": true,
+    "completedDate": "2025-07-05",
+    "dueDate": "2025-07-10"
   },
   {
     "id": 3,
     "title": "프로젝트 마감",
-    "date": "2025-07-12",
-    "completed": false
+    "completed": false,
+    "dueDate": "2025-08-05"
   },
   {
     "id": 4,
     "title": "운동하기",
-    "date": "2025-07-18",
-    "completed": true
+    "completed": true,
+    "completedDate": "2025-07-18"
   },
   {
     "id": 5,
     "title": "독서",
-    "date": "2025-07-18",
-    "completed": false
+    "completed": true,
+    "completedDate": "2025-07-19"
   },
   {
     "id": 6,
     "title": "물 마시기",
-    "date": "2025-07-30",
-    "completed": false
+    "completed": true,
+    "completedDate": "2025-07-30"
+  },
+  {
+    "id": 7,
+    "title": "여름 휴가 계획",
+    "completed": true,
+    "completedDate": "2025-07-22"
+  },
+  {
+    "id": 8,
+    "title": "월간 보고서 작성",
+    "completed": true,
+    "completedDate": "2025-07-28"
+  },
+  {
+    "id": 9,
+    "title": "영어 공부",
+    "completed": true,
+    "completedDate": "2025-07-15"
+  },
+  {
+    "id": 10,
+    "title": "정리정돈",
+    "completed": true,
+    "completedDate": "2025-07-12"
+  },
+  {
+    "id": 11,
+    "title": "친구 만나기",
+    "completed": true,
+    "completedDate": "2025-07-25"
+  },
+  {
+    "id": 12,
+    "title": "세미나 참석",
+    "completed": false,
+    "dueDate": "2025-08-02"
+  },
+  {
+    "id": 13,
+    "title": "건강검진",
+    "completed": false,
+    "dueDate": "2025-08-10"
+  },
+  {
+    "id": 14,
+    "title": "도서관 책 반납",
+    "completed": false,
+    "dueDate": "2025-07-30"
+  },
+  {
+    "id": 15,
+    "title": "세금 신고",
+    "completed": false,
+    "dueDate": "2025-08-15"
+  },
+  {
+    "id": 16,
+    "title": "자동차 점검",
+    "completed": false,
+    "dueDate": "2025-08-01"
   }
 ]

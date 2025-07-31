@@ -4,12 +4,9 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import {
-  MountainIcon,
   Settings,
   LogOut,
   CheckSquare,
-  UserRound,
-  CreditCard,
 } from "lucide-react";
 import { signOut } from "@/app/login/actions";
 import { Button } from "@/components/ui/button";
