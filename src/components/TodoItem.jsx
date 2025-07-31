@@ -46,6 +46,7 @@ import {
   AlarmCheck,
   CalendarIcon,
   Trash2,
+  RotateCcw,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
@@ -257,7 +258,37 @@ function EditTodoDialog({ todo, children, onUpdate }) {
     const [h, m] = time.split(":");
     const updated = new Date(form[field]);
     updated.setHours(h, m);
-    setForm({ ...form, [field]: updated });
+    
+    // 현재 시간보다 이전으로 설정하려고 하면 현재 시간으로 설정
+    const now = new Date();
+    if (updated < now) {
+      const currentTime = new Date();
+      setForm({ ...form, [field]: currentTime });
+    } else {
+      setForm({ ...form, [field]: updated });
+    }
+  };
+
+  // 오늘 날짜인 경우 현재 시간 이후의 시간만 표시
+  const getAvailableTimeOptions = () => {
+    if (!form.dueDate) return timeOptions;
+    
+    const selectedDate = new Date(form.dueDate);
+    const today = new Date();
+    
+    // 선택된 날짜가 오늘이 아니면 모든 시간 옵션 반환
+    if (selectedDate.toDateString() !== today.toDateString()) {
+      return timeOptions;
+    }
+    
+    // 오늘인 경우 현재 시간 이후만 반환
+    const currentHour = today.getHours();
+    const currentMinute = today.getMinutes();
+    
+    return timeOptions.filter(time => {
+      const [h, m] = time.split(":").map(Number);
+      return h > currentHour || (h === currentHour && m >= currentMinute);
+    });
   };
 
   return (
@@ -297,7 +328,21 @@ function EditTodoDialog({ todo, children, onUpdate }) {
 
           {/* 마감 날짜 & 시간 */}
           <div className="grid gap-2">
-            <Label>마감 날짜</Label>
+            <div className="flex items-center gap-2">
+              <Label>마감 날짜</Label>
+              {form.dueDate && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-5 w-5 p-0 text-muted-foreground hover:text-blue-500 transition-colors"
+                  onClick={() => setForm({ ...form, dueDate: null })}
+                  title="마감날짜 초기화"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                </Button>
+              )}
+            </div>
             <div className="flex gap-2">
               <Popover>
                 <PopoverTrigger asChild>
@@ -318,21 +363,59 @@ function EditTodoDialog({ todo, children, onUpdate }) {
                   <Calendar
                     mode="single"
                     selected={form.dueDate}
-                    onSelect={(date) => setForm({ ...form, dueDate: date })}
+                    onSelect={(date) => {
+                      if (!date) {
+                        setForm({ ...form, dueDate: date });
+                        return;
+                      }
+
+                      const selectedDate = new Date(date);
+                      const today = new Date();
+                      
+                      // 오늘 날짜를 선택한 경우, 현재 시간 이후의 가장 빠른 시간으로 설정
+                      if (selectedDate.toDateString() === today.toDateString()) {
+                        const currentHour = today.getHours();
+                        const currentMinute = today.getMinutes();
+                        
+                        // 30분 단위로 올림 처리
+                        let nextMinute = currentMinute <= 30 ? 30 : 0;
+                        let nextHour = currentMinute <= 30 ? currentHour : currentHour + 1;
+                        
+                        // 24시를 넘으면 다음날 00:00으로 설정
+                        if (nextHour >= 24) {
+                          selectedDate.setDate(selectedDate.getDate() + 1);
+                          nextHour = 0;
+                          nextMinute = 0;
+                        }
+                        
+                        selectedDate.setHours(nextHour, nextMinute, 0, 0);
+                      } else {
+                        // 미래 날짜는 00:00으로 설정
+                        selectedDate.setHours(0, 0, 0, 0);
+                      }
+                      
+                      setForm({ ...form, dueDate: selectedDate });
+                    }}
                     initialFocus
                     locale={ko}
+                    disabled={(date) => {
+                      const today = new Date();
+                      today.setHours(0, 0, 0, 0);
+                      return date < today;
+                    }}
                   />
                 </PopoverContent>
               </Popover>
               <Select
                 value={form.dueDate ? format(form.dueDate, "HH:mm") : ""}
                 onValueChange={(val) => handleTimeChange("dueDate", val)}
+                disabled={!form.dueDate}
               >
                 <SelectTrigger className="w-[100px]">
                   <SelectValue placeholder="시간 선택" />
                 </SelectTrigger>
                 <SelectContent>
-                  {timeOptions.map((t) => (
+                  {getAvailableTimeOptions().map((t) => (
                     <SelectItem key={t} value={t}>
                       {t}
                     </SelectItem>
