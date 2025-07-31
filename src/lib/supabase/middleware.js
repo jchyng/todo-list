@@ -50,17 +50,17 @@ export async function updateSession(request) {
       maxAge: 60 * 60 * 24 * 7, // 7일
     });
 
-    if (path === "/login" || path === "/") return redirect("/todo");
+    if (path === "/login" || path === "/") return redirect(request, "/todo");
   } else {
     supabaseResponse.cookies.delete("user_info");
 
-    if (!path.startsWith("/login")) return redirect("/login");
+    if (!path.startsWith("/login")) return redirect(request, "/login");
   }
 
   return supabaseResponse;
 }
 
-function redirect(path) {
+function redirect(request, path) {
   const url = request.nextUrl.clone();
   url.pathname = path;
   return NextResponse.redirect(url);

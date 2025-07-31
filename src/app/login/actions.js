@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 
 import { createClient } from "@/lib/supabase/server";
 
@@ -41,6 +42,23 @@ export async function loginWithOAuth(provider) {
 
 export async function googleLogin() {
   await loginWithOAuth("google");
+}
+
+export async function signOut() {
+  const supabase = await createClient();
+  
+  // defaults to the global scope
+  await supabase.auth.signOut();
+
+  // sign out from the current session only
+  await supabase.auth.signOut({ scope: "local" });
+
+  // user_info 쿠키 삭제
+  const cookieStore = await cookies();
+  cookieStore.delete('user_info');
+
+  revalidatePath("/", "layout");
+  redirect("/login");
 }
 
 export async function signup(formData) {
