@@ -9,13 +9,45 @@ import { ClipboardList } from "lucide-react";
 import { TodoItem } from "@/components/TodoItem";
 import data from "./data.json";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function TodoPage() {
   return (
     <div className="flex flex-col gap-6 ">
+      <CurrentTimeCard />
       <AddTodoCard />
       <TodoListCard todos={data} />
+    </div>
+  );
+}
+
+function CurrentTimeCard() {
+  const [currentTime, setCurrentTime] = useState(new Date());
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const formatTime = (date) => {
+    const month = date.getMonth() + 1;
+    const day = date.getDate();
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    
+    return { month, day, hours, minutes };
+  };
+
+  const { month, day, hours, minutes } = formatTime(currentTime);
+
+  return (
+    <div className="text-center mb-2">
+      <div className="text-4xl font-mono font-bold text-gray-900 tracking-wider">
+        {month}월 {day}일 {hours}:{minutes}
+      </div>
     </div>
   );
 }
