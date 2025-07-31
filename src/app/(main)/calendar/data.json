@@ -8,7 +8,7 @@
     "id": 2,
     "title": "코드 리뷰",
     "completed": true,
-    "completedDate": "2025-07-05",
+    "updatedAt": "2025-07-05",
     "dueDate": "2025-07-10"
   },
   {
@@ -21,49 +21,50 @@
     "id": 4,
     "title": "운동하기",
     "completed": true,
-    "completedDate": "2025-07-18"
+    "updatedAt": "2025-07-18"
   },
   {
     "id": 5,
     "title": "독서",
     "completed": true,
-    "completedDate": "2025-07-19"
+    "updatedAt": "2025-07-19"
   },
   {
     "id": 6,
     "title": "물 마시기",
     "completed": true,
-    "completedDate": "2025-07-30"
+    "updatedAt": "2025-07-30",
+    "dueDate": "2025-07-31"
   },
   {
     "id": 7,
     "title": "여름 휴가 계획",
     "completed": true,
-    "completedDate": "2025-07-22"
+    "updatedAt": "2025-07-22"
   },
   {
     "id": 8,
     "title": "월간 보고서 작성",
     "completed": true,
-    "completedDate": "2025-07-28"
+    "updatedAt": "2025-07-28"
   },
   {
     "id": 9,
     "title": "영어 공부",
     "completed": true,
-    "completedDate": "2025-07-15"
+    "updatedAt": "2025-07-15"
   },
   {
     "id": 10,
     "title": "정리정돈",
     "completed": true,
-    "completedDate": "2025-07-12"
+    "updatedAt": "2025-07-12"
   },
   {
     "id": 11,
     "title": "친구 만나기",
     "completed": true,
-    "completedDate": "2025-07-25"
+    "updatedAt": "2025-07-25"
   },
   {
     "id": 12,
