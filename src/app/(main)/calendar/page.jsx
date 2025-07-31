@@ -22,9 +22,9 @@ import {
   AlertTriangle,
   BarChart3,
   TrendingUp,
-  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
+import { TodoItem } from "@/components/TodoItem";
 
 import {
   getCalendarDays,
@@ -47,7 +47,7 @@ export default function CalendarPage() {
     const month = currentDate.getMonth();
 
     return todos.filter((todo) => {
-      const dateString = todo.completed ? todo.completedDate : todo.dueDate;
+      const dateString = todo.completed ? todo.updatedAt : todo.dueDate;
       if (!dateString) {
         return false;
       }
@@ -64,8 +64,8 @@ export default function CalendarPage() {
       let dateKey = null;
 
       // 완료된 작업이고 완료 날짜가 있는 경우
-      if (todo.completed && todo.completedDate) {
-        dateKey = todo.completedDate;
+      if (todo.completed && todo.updatedAt) {
+        dateKey = todo.updatedAt;
       }
       // 미완료 작업이고 마감일이 있는 경우
       else if (!todo.completed && todo.dueDate) {
@@ -344,44 +344,10 @@ function CalendarDialog({ date, todos, children }) {
     ["일", "월", "화", "수", "목", "금", "토"][date.getDay()]
   })`;
 
-  const getStatusInfo = (todo) => {
-    if (todo.completed) {
-      return {
-        label: "완료",
-        className: "bg-green-100 text-green-800",
-        icon: <CheckCircle className="h-3 w-3" />,
-      };
-    } else if (todo.dueDate) {
-      const today = new Date();
-      const dueDate = new Date(todo.dueDate);
-      const isOverdue = dueDate < today;
-
-      if (isOverdue) {
-        return {
-          label: "지연",
-          className: "bg-red-100 text-red-800",
-          icon: <CheckCircle className="h-3 w-3" />,
-        };
-      } else {
-        return {
-          label: "예정",
-          className: "bg-amber-100 text-amber-800",
-          icon: <CheckCircle className="h-3 w-3" />,
-        };
-      }
-    }
-
-    return {
-      label: "미완료",
-      className: "bg-gray-100 text-gray-800",
-      icon: <CheckCircle className="h-3 w-3" />,
-    };
-  };
-
   return (
     <Dialog>
       <DialogTrigger asChild>{children}</DialogTrigger>
-      <DialogContent className="max-w-lg">
+      <DialogContent style={{ width: "80vw", maxWidth: "960px" }}>
         <DialogHeader>
           <DialogTitle>{formattedDate}</DialogTitle>
           <DialogDescription>
@@ -411,50 +377,26 @@ function CalendarDialog({ date, todos, children }) {
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] pr-4 -mr-4">
-          <div className="space-y-3 py-2">
+          <div className="divide-y">
             {todos && todos.length > 0 ? (
-              todos.map((todo) => {
-                const status = getStatusInfo(todo);
-                return (
-                  <Card key={todo.id} className="overflow-hidden">
-                    <CardContent className="px-4 flex items-center gap-4">
-                      <div className="flex-1">
-                        <p
-                          className={cn(
-                            "font-semibold",
-                            todo.completed &&
-                              "line-through text-muted-foreground"
-                          )}
-                        >
-                          {todo.title}
-                        </p>
-                        {todo.description && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            {todo.description}
-                          </p>
-                        )}
-                      </div>
-                      <Badge
-                        className={cn(
-                          "flex items-center gap-2",
-                          status.className
-                        )}
-                      >
-                        {status.icon}
-                        <span>{status.label}</span>
-                      </Badge>
-                      {status.label === "지연" && (
-                        <Button
-                          variant="ghost"
-                          onClick={() => alert("지연된 작업을 처리하세요.")}
-                        >
-                          <Trash2 className="h-4 w-4 text-red-500" />
-                        </Button>
-                      )}
-                    </CardContent>
-                  </Card>
-                );
-              })
+              todos.map((todo) => (
+                <TodoItem
+                  key={todo.id}
+                  todo={todo}
+                  onToggleComplete={(id, completed) => {
+                    console.log("Toggle complete:", id, completed);
+                    // TODO: API 호출로 완료 상태 업데이트
+                  }}
+                  onDelete={(id) => {
+                    console.log("Delete todo:", id);
+                    // TODO: API 호출로 삭제
+                  }}
+                  onUpdate={(id, updatedData) => {
+                    console.log("Update todo:", id, updatedData);
+                    // TODO: API 호출로 업데이트
+                  }}
+                />
+              ))
             ) : (
               <div className="text-center py-12">
                 <CheckCircle className="mx-auto h-12 w-12 text-muted-foreground/80" />
