@@ -14,7 +14,6 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import {
-  Calendar as CalendarIcon,
   CheckCircle,
   ChevronLeft,
   ChevronRight,
@@ -23,6 +22,7 @@ import {
   AlertTriangle,
   BarChart3,
   TrendingUp,
+  Trash2,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -40,6 +40,20 @@ export default function CalendarPage() {
   // 달력에 표시할 날짜 배열 생성
   const calendarDays = useMemo(() => {
     return getCalendarDays(currentDate);
+  }, [currentDate]);
+
+  const monthlyTodos = useMemo(() => {
+    const year = currentDate.getFullYear();
+    const month = currentDate.getMonth();
+
+    return todos.filter((todo) => {
+      const dateString = todo.completed ? todo.completedDate : todo.dueDate;
+      if (!dateString) {
+        return false;
+      }
+      const date = new Date(dateString);
+      return date.getFullYear() === year && date.getMonth() === month;
+    });
   }, [currentDate]);
 
   // 완료된 작업(완료 날짜별) + 미완료 작업(마감일별) 그룹화
@@ -82,7 +96,7 @@ export default function CalendarPage() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
       />
-      <CalendarStats todos={todos} />
+      <CalendarStats todos={monthlyTodos} />
       <CalendarGrid
         days={calendarDays}
         currentDate={currentDate}
@@ -160,7 +174,8 @@ function CalendarStats({ todos }) {
       return dueDate < today;
     }).length;
     const total = completed + incomplete;
-    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    const completionRate =
+      total > 0 ? Math.round((completed / total) * 100) : 0;
 
     return { completed, incomplete, overdue, total, completionRate };
   }, [todos]);
@@ -378,12 +393,17 @@ function CalendarDialog({ date, todos, children }) {
                 (todo) => !todo.completed
               ).length;
 
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const isPast = date < today;
+              const incompleteText = isPast ? "마감된 작업" : "예정된 작업";
+
               if (completedCount > 0 && incompleteCount > 0) {
-                return `완료된 작업 ${completedCount}개, 예정된 작업 ${incompleteCount}개가 있습니다.`;
+                return `완료된 작업 ${completedCount}개, ${incompleteText} ${incompleteCount}개가 있습니다.`;
               } else if (completedCount > 0) {
                 return `총 ${completedCount}개의 작업을 완료했습니다.`;
               } else if (incompleteCount > 0) {
-                return `총 ${incompleteCount}개의 예정된 작업이 있습니다.`;
+                return `총 ${incompleteCount}개의 ${incompleteText}이 있습니다.`;
               } else {
                 return "작업이 없습니다.";
               }
@@ -397,7 +417,7 @@ function CalendarDialog({ date, todos, children }) {
                 const status = getStatusInfo(todo);
                 return (
                   <Card key={todo.id} className="overflow-hidden">
-                    <CardContent className="p-4 flex items-start space-x-4">
+                    <CardContent className="px-4 flex items-center gap-4">
                       <div className="flex-1">
                         <p
                           className={cn(
@@ -415,22 +435,29 @@ function CalendarDialog({ date, todos, children }) {
                         )}
                       </div>
                       <Badge
-                        variant="outline"
                         className={cn(
-                          "flex items-center space-x-1.5",
+                          "flex items-center gap-2",
                           status.className
                         )}
                       >
                         {status.icon}
                         <span>{status.label}</span>
                       </Badge>
+                      {status.label === "지연" && (
+                        <Button
+                          variant="ghost"
+                          onClick={() => alert("지연된 작업을 처리하세요.")}
+                        >
+                          <Trash2 className="h-4 w-4 text-red-500" />
+                        </Button>
+                      )}
                     </CardContent>
                   </Card>
                 );
               })
             ) : (
               <div className="text-center py-12">
-                <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                <CheckCircle className="mx-auto h-12 w-12 text-muted-foreground/80" />
                 <h3 className="mt-4 text-lg font-medium text-muted-foreground">
                   작업 없음
                 </h3>
