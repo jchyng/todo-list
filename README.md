@@ -4,6 +4,7 @@
 2. Zustand
 3. TailwindCSS + Shadcn + Magic UI + Lucide Icons
 4. Supabase
+5. MongoDB
 
 <br/>
 

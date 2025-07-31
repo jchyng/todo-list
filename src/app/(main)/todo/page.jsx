@@ -7,16 +7,112 @@ import { Input } from "@/components/ui/input";
 import { ClipboardList } from "lucide-react";
 
 import { TodoItem } from "@/components/TodoItem";
-import data from "./data.json";
+import {
+  fetchTodoList,
+  createTodo,
+  updateTodo,
+  deleteTodo,
+  toggleTodoComplete,
+} from "@/lib/api";
 
 import { useState, useEffect } from "react";
 
 export default function TodoPage() {
+  const [todos, setTodos] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // 할 일 목록 로드
+  const loadTodos = async () => {
+    try {
+      setLoading(true);
+      const { todos: todosData } = await fetchTodoList();
+      setTodos(todosData);
+      setError(null);
+    } catch (err) {
+      console.error("할 일 로드 실패:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 할 일 추가
+  const handleAddTodo = async (todoData) => {
+    try {
+      const newTodo = await createTodo(todoData);
+      setTodos((prev) => [newTodo, ...prev]);
+      return newTodo;
+    } catch (err) {
+      console.error("할 일 추가 실패:", err);
+      throw err;
+    }
+  };
+
+  // 할 일 수정
+  const handleUpdateTodo = async (id, updateData) => {
+    try {
+      const updatedTodo = await updateTodo(id, updateData);
+      setTodos((prev) =>
+        prev.map((todo) => (todo._id === id ? updatedTodo : todo))
+      );
+    } catch (err) {
+      console.error("할 일 수정 실패:", err);
+      throw err;
+    }
+  };
+
+  // 할 일 삭제
+  const handleDeleteTodo = async (id) => {
+    try {
+      await deleteTodo(id);
+      setTodos((prev) => prev.filter((todo) => todo._id !== id));
+    } catch (err) {
+      console.error("할 일 삭제 실패:", err);
+      throw err;
+    }
+  };
+
+  // 완료 상태 토글
+  const handleToggleComplete = async (id) => {
+    try {
+      const updatedTodo = await toggleTodoComplete(id);
+      setTodos((prev) =>
+        prev.map((todo) => (todo._id === id ? updatedTodo : todo))
+      );
+    } catch (err) {
+      console.error("완료 상태 변경 실패:", err);
+      throw err;
+    }
+  };
+
+  useEffect(() => {
+    loadTodos();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="flex flex-col gap-6">
+        <CurrentTimeCard />
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-muted-foreground">할 일을 불러오는 중...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="flex flex-col gap-6 ">
+    <div className="flex flex-col gap-6">
       <CurrentTimeCard />
-      <AddTodoCard />
-      <TodoListCard todos={data} />
+      <AddTodoCard onAddTodo={handleAddTodo} />
+      <TodoListCard
+        todos={todos}
+        onUpdateTodo={handleUpdateTodo}
+        onDeleteTodo={handleDeleteTodo}
+        onToggleComplete={handleToggleComplete}
+        error={error}
+      />
     </div>
   );
 }
@@ -35,16 +131,16 @@ function CurrentTimeCard() {
   const formatTime = (date) => {
     const month = date.getMonth() + 1;
     const day = date.getDate();
-    const hours = date.getHours().toString().padStart(2, '0');
-    const minutes = date.getMinutes().toString().padStart(2, '0');
-    
+    const hours = date.getHours().toString().padStart(2, "0");
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+
     return { month, day, hours, minutes };
   };
 
   const { month, day, hours, minutes } = formatTime(currentTime);
 
   return (
-    <div className="text-center mb-2">
+    <div className="text-center my-12">
       <div className="text-4xl font-mono font-bold text-gray-900 tracking-wider">
         {month}월 {day}일 {hours}:{minutes}
       </div>
@@ -52,12 +148,22 @@ function CurrentTimeCard() {
   );
 }
 
-function AddTodoCard() {
+function AddTodoCard({ onAddTodo }) {
   const [task, setTask] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleAdd = () => {
+  const handleAdd = async () => {
     if (task.trim() === "") return;
-    setTask(""); // 입력 초기화
+
+    try {
+      setLoading(true);
+      await onAddTodo({ title: task.trim() });
+      setTask(""); // 입력 초기화
+    } catch (err) {
+      alert("할 일 추가에 실패했습니다: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -71,41 +177,95 @@ function AddTodoCard() {
             placeholder="할 일을 입력하세요"
             value={task}
             onChange={(e) => setTask(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") {
+                e.preventDefault(); // 기본 폼 제출 동작 방지
+                handleAdd();
+              }
+            }}
           />
-          <Button onClick={handleAdd}>추가</Button>
+          <Button onClick={handleAdd} disabled={loading}>
+            {loading ? "추가 중..." : "추가"}
+          </Button>
         </div>
       </CardContent>
     </Card>
   );
 }
 
-function TodoListCard({ todos }) {
+function TodoListCard({
+  todos,
+  onUpdateTodo,
+  onDeleteTodo,
+  onToggleComplete,
+  error,
+}) {
+  const [filteredTodos, setFilteredTodos] = useState(todos);
+
+  // todos가 변경될 때 filteredTodos 초기화
+  useEffect(() => {
+    setFilteredTodos(todos);
+  }, [todos]);
+
   return (
     <Card className="overflow-hidden">
       <CardHeader>
         <CardTitle>
           <div className="flex justify-between items-center">
             <span>작업 목록</span>
-            <TodoFilters todos={todos} />
+            <TodoFilters todos={todos} onFilter={setFilteredTodos} />
           </div>
         </CardTitle>
       </CardHeader>
       <CardContent className="p-0 border-t">
-        <TodoList todos={todos} />
+        {error && (
+          <div className="p-4 bg-red-50 border-b">
+            <p className="text-red-600 text-sm">오류: {error}</p>
+          </div>
+        )}
+        <TodoList
+          todos={filteredTodos}
+          onUpdateTodo={onUpdateTodo}
+          onDeleteTodo={onDeleteTodo}
+          onToggleComplete={onToggleComplete}
+        />
       </CardContent>
     </Card>
   );
 }
 
-function TodoFilters({ todos }) {
+function TodoFilters({ todos, onFilter }) {
   const [activeFilter, setActiveFilter] = useState("all");
 
   const total = todos.length;
   const pending = todos.filter((t) => !t.completed).length;
   const completed = todos.filter((t) => t.completed).length;
 
-  const [dateRange, setDateRange] = useState({ from: null, to: null });
+  // 필터링 로직
+  const applyFilter = (filterType) => {
+    setActiveFilter(filterType);
+    
+    let filtered;
+    switch (filterType) {
+      case "pending":
+        filtered = todos.filter((t) => !t.completed);
+        break;
+      case "completed":
+        filtered = todos.filter((t) => t.completed);
+        break;
+      case "all":
+      default:
+        filtered = todos;
+        break;
+    }
+    
+    onFilter(filtered);
+  };
+
+  // todos가 변경될 때 현재 필터 다시 적용
+  useEffect(() => {
+    applyFilter(activeFilter);
+  }, [todos]);
 
   return (
     <div className="flex items-center gap-2">
@@ -114,21 +274,21 @@ function TodoFilters({ todos }) {
         color="blue"
         label="전체"
         count={total}
-        onClick={() => setActiveFilter("all")}
+        onClick={() => applyFilter("all")}
       />
       <FilterButton
         active={activeFilter === "pending"}
         color="amber"
-        label="미완료"
+        label="진행중"
         count={pending}
-        onClick={() => setActiveFilter("pending")}
+        onClick={() => applyFilter("pending")}
       />
       <FilterButton
         active={activeFilter === "completed"}
         color="emerald"
         label="완료"
         count={completed}
-        onClick={() => setActiveFilter("completed")}
+        onClick={() => applyFilter("completed")}
       />
     </div>
   );
@@ -176,27 +336,18 @@ function FilterButton({ active, color, label, count, onClick }) {
   );
 }
 
-function TodoList({ todos }) {
+function TodoList({ todos, onUpdateTodo, onDeleteTodo, onToggleComplete }) {
   if (todos.length === 0) return <EmptyState />;
 
   return (
     <div className="divide-y">
       {todos.map((item) => (
         <TodoItem
-          key={item.id}
+          key={item._id}
           todo={item}
-          onToggleComplete={(id, completed) => {
-            console.log("Toggle complete:", id, completed);
-            // TODO: API 호출로 완료 상태 업데이트
-          }}
-          onDelete={(id) => {
-            console.log("Delete todo:", id);
-            // TODO: API 호출로 삭제
-          }}
-          onUpdate={(id, updatedData) => {
-            console.log("Update todo:", id, updatedData);
-            // TODO: API 호출로 업데이트
-          }}
+          onToggleComplete={onToggleComplete}
+          onDelete={onDeleteTodo}
+          onUpdate={onUpdateTodo}
         />
       ))}
     </div>
