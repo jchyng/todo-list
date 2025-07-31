@@ -92,3 +92,11 @@ The app runs on Next.js development server. Use `npm run dev` to start developme
 - Component architecture follows React patterns with hooks
 - Production-ready MongoDB integration with security best practices
 - Uses Next.js App Router with server/client component separation
+
+## Environment Variables and Configuration
+
+### Environment Variable Management
+- When using environment variables with `NEXT_PUBLIC_` prefix:
+  - For client-side accessible variables: Keep `NEXT_PUBLIC_` prefix
+  - For server-side only variables: Remove `NEXT_PUBLIC_` prefix
+  - `NEXT_PUBLIC_SITE_URL` should remain with prefix if used in actions or client-side code

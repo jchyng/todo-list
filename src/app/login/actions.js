@@ -31,7 +31,7 @@ export async function loginWithOAuth(provider) {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      redirectTo: `${process.env.SITE_URL}/auth/callback`,
     },
   });
 
@@ -46,7 +46,7 @@ export async function googleLogin() {
 
 export async function signOut() {
   const supabase = await createClient();
-  
+
   // defaults to the global scope
   await supabase.auth.signOut();
 
@@ -55,7 +55,7 @@ export async function signOut() {
 
   // user_info 쿠키 삭제
   const cookieStore = await cookies();
-  cookieStore.delete('user_info');
+  cookieStore.delete("user_info");
 
   revalidatePath("/", "layout");
   redirect("/login");
