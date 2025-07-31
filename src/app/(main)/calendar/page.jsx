@@ -16,11 +16,13 @@ import { cn } from "@/lib/utils";
 import {
   Calendar as CalendarIcon,
   CheckCircle,
-  CheckSquare,
   ChevronLeft,
   ChevronRight,
+  CheckCircle2,
   Clock,
-  XCircle,
+  AlertTriangle,
+  BarChart3,
+  TrendingUp,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 
@@ -29,8 +31,8 @@ import {
   getNextMonthDate,
   getPrevMonthDate,
 } from "@/lib/dateUtils";
-import todos from "./data.json";
 import NumberTicker from "@/components/magicui/number-ticker";
+import todos from "./data.json";
 
 export default function CalendarPage() {
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -40,14 +42,28 @@ export default function CalendarPage() {
     return getCalendarDays(currentDate);
   }, [currentDate]);
 
-  // JSON 데이터를 날짜별로 그룹화
+  // 완료된 작업(완료 날짜별) + 미완료 작업(마감일별) 그룹화
   const todosByDate = useMemo(() => {
     const grouped = {};
+
     todos.forEach((todo) => {
-      const dateKey = todo.date;
-      if (!grouped[dateKey]) grouped[dateKey] = [];
-      grouped[dateKey].push(todo);
+      let dateKey = null;
+
+      // 완료된 작업이고 완료 날짜가 있는 경우
+      if (todo.completed && todo.completedDate) {
+        dateKey = todo.completedDate;
+      }
+      // 미완료 작업이고 마감일이 있는 경우
+      else if (!todo.completed && todo.dueDate) {
+        dateKey = todo.dueDate;
+      }
+
+      if (dateKey) {
+        if (!grouped[dateKey]) grouped[dateKey] = [];
+        grouped[dateKey].push(todo);
+      }
     });
+
     return grouped;
   }, []);
 
@@ -59,12 +75,6 @@ export default function CalendarPage() {
     setCurrentDate(getNextMonthDate(currentDate));
   };
 
-  const isOverdue = (todo) => {
-    if (!todo.dueDate) return false;
-    const due = new Date(todo.dueDate);
-    return due < new Date();
-  };
-
   return (
     <div className="space-y-6">
       <CalendarHeader
@@ -72,16 +82,11 @@ export default function CalendarPage() {
         onPrevMonth={handlePrevMonth}
         onNextMonth={handleNextMonth}
       />
-      <CalendarStats
-        todos={todos}
-        currentDate={currentDate}
-        isOverdue={isOverdue}
-      />
+      <CalendarStats todos={todos} />
       <CalendarGrid
         days={calendarDays}
         currentDate={currentDate}
         todosByDate={todosByDate}
-        isOverdue={isOverdue}
       />
     </div>
   );
@@ -103,78 +108,100 @@ function CalendarHeader({ currentDate, onPrevMonth, onNextMonth }) {
   );
 }
 
-function CalendarStats({ todos, currentDate, isOverdue }) {
-  const year = currentDate.getFullYear();
-  const month = currentDate.getMonth();
+function StatCard({ icon, label, value, colorClass }) {
+  return (
+    <Card>
+      <CardContent className="px-4">
+        <div className="flex items-center space-x-2 mb-1">
+          {icon}
+          <div className={`text-lg font-medium ${colorClass}`}>{label}</div>
+        </div>
+        <div>
+          <NumberTicker
+            value={value}
+            className={`text-2xl font-bold ${colorClass}`}
+          />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-  const monthlyTodos = todos.filter((todo) => {
-    if (!todo.date) return false;
-    const todoDate = new Date(todo.date);
-    return todoDate.getFullYear() === year && todoDate.getMonth() === month;
-  });
+function PercentageCard({ icon, label, value, colorClass }) {
+  return (
+    <Card>
+      <CardContent className="px-4">
+        <div className="flex items-center space-x-2 mb-1">
+          {icon}
+          <div className={`text-lg font-medium ${colorClass}`}>{label}</div>
+        </div>
+        <div className={`text-2xl font-bold ${colorClass}`}>
+          <NumberTicker
+            value={value}
+            className={`text-2xl font-bold ${colorClass}`}
+          />
+          %
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
-  const statsData = [
-    {
-      label: "전체",
-      value: monthlyTodos.length,
-      icon: CheckSquare,
-      bg: "bg-blue-100",
-      color: "text-blue-600",
-    },
-    {
-      label: "완료",
-      value: monthlyTodos.filter((t) => t.completed).length,
-      icon: CheckCircle,
-      bg: "bg-emerald-100",
-      color: "text-emerald-600",
-    },
-    {
-      label: "진행중",
-      value: monthlyTodos.filter((t) => !t.completed && !isOverdue(t)).length,
-      icon: Clock,
-      bg: "bg-amber-100",
-      color: "text-amber-600",
-    },
-    {
-      label: "마감",
-      value: monthlyTodos.filter((t) => !t.completed && isOverdue(t)).length,
-      icon: Clock, // 필요하면 XCircle로 교체 가능
-      bg: "bg-red-100",
-      color: "text-red-600",
-    },
-  ];
+function CalendarStats({ todos }) {
+  const stats = useMemo(() => {
+    const completed = todos.filter((todo) => todo.completed).length;
+    const incomplete = todos.filter(
+      (todo) => !todo.completed && todo.dueDate
+    ).length;
+    const overdue = todos.filter((todo) => {
+      if (!todo.dueDate || todo.completed) return false;
+      const today = new Date();
+      const dueDate = new Date(todo.dueDate);
+      return dueDate < today;
+    }).length;
+    const total = completed + incomplete;
+    const completionRate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return { completed, incomplete, overdue, total, completionRate };
+  }, [todos]);
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-      {statsData.map(({ label, value, icon: Icon, bg, color }) => (
-        <Card
-          key={label}
-          className="py-0 border border-slate-200 shadow-sm bg-white hover:shadow-md transition-all duration-200"
-        >
-          <CardContent className="p-4">
-            <div className="flex items-center space-x-3">
-              {/* 아이콘 크기 확대 */}
-              <div
-                className={`w-10 h-10 ${bg} rounded-lg flex items-center justify-center`}
-              >
-                <Icon className={`w-5 h-5 ${color}`} />
-              </div>
-              <div>
-                {/* 숫자 폰트 크기 확대 */}
-                <p className="text-2xl font-bold text-slate-900">
-                  <NumberTicker value={value} />
-                </p>
-                <p className="text-sm text-slate-600">{label}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+      <StatCard
+        icon={<CheckCircle2 className="h-5 w-5 text-green-500" />}
+        label="완료"
+        value={stats.completed}
+        colorClass="text-green-600"
+      />
+      <StatCard
+        icon={<Clock className="h-5 w-5 text-amber-500" />}
+        label="예정"
+        value={stats.incomplete - stats.overdue}
+        colorClass="text-amber-600"
+      />
+      <StatCard
+        icon={<AlertTriangle className="h-5 w-5 text-red-500" />}
+        label="지연"
+        value={stats.overdue}
+        colorClass="text-red-600"
+      />
+      <StatCard
+        icon={<BarChart3 className="h-5 w-5 text-blue-500" />}
+        label="전체"
+        value={stats.total}
+        colorClass="text-blue-600"
+      />
+      <PercentageCard
+        icon={<TrendingUp className="h-5 w-5 text-purple-500" />}
+        label="완료율"
+        value={stats.completionRate}
+        colorClass="text-purple-600"
+      />
     </div>
   );
 }
 
-function CalendarGrid({ days, currentDate, todosByDate, isOverdue }) {
+function CalendarGrid({ days, currentDate, todosByDate }) {
   const weekDays = ["일", "월", "화", "수", "목", "금", "토"];
   const today = new Date().toDateString();
 
@@ -242,29 +269,46 @@ function CalendarGrid({ days, currentDate, todosByDate, isOverdue }) {
                     <Badge variant="outline">{dayTodos.length}</Badge>
                   )}
                 </div>
+
                 <div className="space-y-1">
-                  {dayTodos.slice(0, 2).map((todo) => (
-                    <Badge
-                      key={todo.id}
-                      variant={todo.completed ? "outline" : "default"}
-                      className={cn(
-                        "w-full truncate block", // block을 추가해 주로 문제 예방
-                        todo.completed &&
-                          "bg-green-100/80 text-green-800 border-green-200",
-                        !todo.completed &&
-                          isOverdue(todo) &&
-                          "bg-red-100/80 text-red-800 border-red-200",
-                        !todo.completed &&
-                          !isOverdue(todo) &&
-                          "bg-amber-100/80 text-amber-800 border-amber-200"
-                      )}
-                    >
-                      {todo.title}
-                    </Badge>
-                  ))}
-                  {dayTodos.length > 2 && (
+                  {dayTodos.slice(0, 3).map((todo) => {
+                    // 작업 상태에 따른 스타일 결정
+                    let badgeStyle = "";
+                    if (todo.completed) {
+                      // 완료된 작업 - 녹색
+                      badgeStyle =
+                        "bg-green-100/80 text-green-800 border-green-200";
+                    } else if (todo.dueDate) {
+                      const today = new Date().toDateString();
+                      const dueDate = new Date(todo.dueDate).toDateString();
+                      const isOverdue =
+                        new Date(todo.dueDate) < new Date(today);
+
+                      if (isOverdue) {
+                        // 지연된 작업 - 빨간색
+                        badgeStyle =
+                          "bg-red-100/80 text-red-800 border-red-200";
+                      } else {
+                        // 미완료 작업 - 주황색
+                        badgeStyle =
+                          "bg-amber-100/80 text-amber-800 border-amber-200";
+                      }
+                    }
+
+                    return (
+                      <Badge
+                        key={todo.id}
+                        variant="outline"
+                        className={`w-full truncate block ${badgeStyle}`}
+                      >
+                        {todo.title}
+                      </Badge>
+                    );
+                  })}
+
+                  {dayTodos.length > 3 && (
                     <Badge variant="secondary" className="w-full truncate">
-                      +{dayTodos.length - 2}개 더 보기
+                      +{dayTodos.length - 3}개 더 보기
                     </Badge>
                   )}
                 </div>
@@ -287,23 +331,36 @@ function CalendarDialog({ date, todos, children }) {
   })`;
 
   const getStatusInfo = (todo) => {
-    const isOverdue = !todo.completed && new Date(todo.date) < new Date();
-    if (todo.completed)
+    if (todo.completed) {
       return {
         label: "완료",
         className: "bg-green-100 text-green-800",
         icon: <CheckCircle className="h-3 w-3" />,
       };
-    if (isOverdue)
-      return {
-        label: "마감",
-        className: "bg-red-100 text-red-800",
-        icon: <XCircle className="h-3 w-3" />,
-      };
+    } else if (todo.dueDate) {
+      const today = new Date();
+      const dueDate = new Date(todo.dueDate);
+      const isOverdue = dueDate < today;
+
+      if (isOverdue) {
+        return {
+          label: "지연",
+          className: "bg-red-100 text-red-800",
+          icon: <CheckCircle className="h-3 w-3" />,
+        };
+      } else {
+        return {
+          label: "예정",
+          className: "bg-amber-100 text-amber-800",
+          icon: <CheckCircle className="h-3 w-3" />,
+        };
+      }
+    }
+
     return {
-      label: "진행중",
-      className: "bg-amber-100 text-amber-800",
-      icon: <Clock className="h-3 w-3" />,
+      label: "미완료",
+      className: "bg-gray-100 text-gray-800",
+      icon: <CheckCircle className="h-3 w-3" />,
     };
   };
 
@@ -314,7 +371,24 @@ function CalendarDialog({ date, todos, children }) {
         <DialogHeader>
           <DialogTitle>{formattedDate}</DialogTitle>
           <DialogDescription>
-            총 {todos.length}개의 할 일이 있습니다.
+            {(() => {
+              const completedCount = todos.filter(
+                (todo) => todo.completed
+              ).length;
+              const incompleteCount = todos.filter(
+                (todo) => !todo.completed
+              ).length;
+
+              if (completedCount > 0 && incompleteCount > 0) {
+                return `완료된 작업 ${completedCount}개, 예정된 작업 ${incompleteCount}개가 있습니다.`;
+              } else if (completedCount > 0) {
+                return `총 ${completedCount}개의 작업을 완료했습니다.`;
+              } else if (incompleteCount > 0) {
+                return `총 ${incompleteCount}개의 예정된 작업이 있습니다.`;
+              } else {
+                return "작업이 없습니다.";
+              }
+            })()}
           </DialogDescription>
         </DialogHeader>
         <ScrollArea className="max-h-[60vh] pr-4 -mr-4">
@@ -359,10 +433,10 @@ function CalendarDialog({ date, todos, children }) {
               <div className="text-center py-12">
                 <CalendarIcon className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium text-muted-foreground">
-                  할 일 없음
+                  작업 없음
                 </h3>
                 <p className="mt-1 text-sm text-muted-foreground/80">
-                  이 날짜에는 등록된 할 일이 없습니다.
+                  이 날짜에는 작업이 없습니다.
                 </p>
               </div>
             )}
