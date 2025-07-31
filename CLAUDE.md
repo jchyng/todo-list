@@ -19,8 +19,9 @@ The app runs on Next.js development server. Use `npm run dev` to start developme
 - **Framework**: Next.js 15.4.4 (App Router)
 - **UI Components**: Radix UI primitives + Shadcn/ui + Magic UI
 - **Styling**: Tailwind CSS v4 with custom animations
-- **State Management**: Zustand
-- **Backend**: Supabase (authentication + database)
+- **State Management**: Zustand (configured but not actively used)
+- **Authentication**: Supabase with Google OAuth
+- **Database**: MongoDB with Mongoose ODM
 - **Icons**: Lucide React
 - **Date Handling**: date-fns with Korean locale support
 - **Animations**: Motion library
@@ -36,17 +37,31 @@ The app runs on Next.js development server. Use `npm run dev` to start developme
   - `todo/page.jsx` - Todo list page with CRUD operations
   - `calendar/page.jsx` - Calendar view with monthly statistics
 - **Auth Callback**: `auth/callback/route.js` - OAuth callback handler
+- **API Routes**: `api/todos/` - REST API endpoints for todo CRUD operations
+  - `route.js` - Main CRUD endpoints (GET, POST)
+  - `[id]/route.js` - Individual todo operations (GET, PUT, DELETE, PATCH)
+  - `list/route.js` - Optimized list endpoint with smart sorting
+  - `calendar/route.js` - Calendar-specific data with date grouping
 
 #### Component Architecture (`src/components/`)
 - **TodoItem.jsx** - Reusable todo item with edit dialog and delete confirmation
+- **SettingsModal.jsx** - User settings and account management modal
 - **UI Components** (`ui/`) - Shadcn/ui components (buttons, dialogs, cards, etc.)
 - **Magic UI** (`magicui/`) - Custom animated components (NumberTicker)
+
+#### Data Models (`src/models/`)
+- **Todo.js** - Mongoose schema with user isolation, soft deletion, and performance indexing
 
 #### Core Libraries (`src/lib/`)
 - **Supabase Clients**:
   - `client.js` - Browser client for client-side operations
   - `server.js` - Server client with cookie handling
   - `middleware.js` - Session management middleware
+- **Database & API**:
+  - `mongodb.js` - MongoDB connection with caching and error handling
+  - `api.js` - Client-side API functions for todo CRUD operations
+  - `validation.js` - Input validation utilities
+  - `errors.js` - Error handling utilities
 - **Utilities**:
   - `utils.js` - Tailwind class merging utilities
   - `dateUtils.js` - Calendar date calculation utilities
@@ -57,10 +72,11 @@ The app runs on Next.js development server. Use `npm run dev` to start developme
 - **OAuth Flow**: Google login via Supabase with callback handling
 
 ### Data Flow & State Management
-- Currently uses JSON files (`data.json`) for todo data in each page directory
-- Zustand store configured but not yet implemented
-- TODO callbacks prepared for API integration
-- Component state managed with React hooks
+- **Backend Database**: MongoDB with Mongoose ODM for data persistence
+- **API Layer**: REST API endpoints in `src/app/api/todos/` with comprehensive route handlers
+- **Client API**: `src/lib/api.js` provides client-side API functions for CRUD operations
+- **State Management**: Component-level React state with hooks (Zustand configured but not actively used)
+- **Data Models**: `src/models/Todo.js` defines schema with user isolation and soft deletion
 
 ### UI Design System
 - **Korean Language**: All user-facing text in Korean as per project requirements
