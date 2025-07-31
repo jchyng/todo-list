@@ -22,17 +22,20 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import {
-  Select,
-  SelectTrigger,
-  SelectContent,
-  SelectItem,
-  SelectValue,
-} from "@/components/ui/select";
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 
 import {
   ClipboardList,
   Check,
-  Edit,
   Trash2,
   BadgeCheck,
   AlarmCheck,
@@ -45,6 +48,13 @@ import { ko } from "date-fns/locale";
 import data from "./data.json";
 
 import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function TodoPage() {
   return (
@@ -274,13 +284,31 @@ function TodoItem({ todo }) {
         >
           {completed ? "완료" : "진행중"}
         </Badge>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="text-muted-foreground hover:text-red-500"
-        >
-          <Trash2 className="w-4 h-4" />
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-red-500"
+            >
+              <Trash2 className="w-4 h-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>정말 삭제하시겠습니까?</AlertDialogTitle>
+              <AlertDialogDescription>
+                이 작업은 되돌릴 수 없습니다. 정말로 이 작업을 삭제하시겠습니까?
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>취소</AlertDialogCancel>
+              <AlertDialogAction className="bg-red-500 hover:bg-red-600">
+                삭제
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </div>
   );
