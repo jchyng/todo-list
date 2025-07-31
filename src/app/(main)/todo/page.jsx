@@ -153,7 +153,7 @@ function AddTodoCard({ onAddTodo }) {
   const [loading, setLoading] = useState(false);
 
   const handleAdd = async () => {
-    if (task.trim() === "") return;
+    if (task.trim() === "" || loading) return; // loading 상태 체크 추가
 
     try {
       setLoading(true);
@@ -176,9 +176,10 @@ function AddTodoCard({ onAddTodo }) {
           <Input
             placeholder="할 일을 입력하세요"
             value={task}
+            disabled={loading}
             onChange={(e) => setTask(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") {
+              if (e.key === "Enter" && !loading) {
                 e.preventDefault(); // 기본 폼 제출 동작 방지
                 handleAdd();
               }
