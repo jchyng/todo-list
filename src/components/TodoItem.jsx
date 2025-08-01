@@ -48,6 +48,7 @@ import {
   Trash2,
   RotateCcw,
 } from "lucide-react";
+import { LoadingSpinner, LoadingOverlay } from "@/components/ui/loading";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
 
@@ -58,6 +59,7 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
   // 낙관적 UI를 위한 로컬 상태
   const [optimisticCompleted, setOptimisticCompleted] = useState(completed);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [justCompleted, setJustCompleted] = useState(false);
 
   // prop이 변경될 때 낙관적 상태 동기화
@@ -95,18 +97,27 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
     }
   };
 
-  const handleDelete = () => {
-    if (onDelete) {
-      onDelete(todo._id);
+  const handleDelete = async () => {
+    if (!onDelete || isDeleting) return;
+    
+    try {
+      setIsDeleting(true);
+      await onDelete(todo._id);
+    } catch (error) {
+      console.error('할 일 삭제 실패:', error);
+      // TODO: 사용자에게 에러 알림 (토스트 등)
+    } finally {
+      setIsDeleting(false);
     }
   };
 
   return (
-    <div className={`p-6 hover:bg-muted/50 transition-all duration-500 flex items-start gap-4 ${
-      justCompleted 
-        ? "animate-pulse bg-emerald-50/50 shadow-lg shadow-emerald-100/50 scale-[1.02]" 
-        : ""
-    }`}>
+    <LoadingOverlay loading={isDeleting} className="group">
+      <div className={`p-6 hover:bg-muted/50 transition-all duration-500 flex items-start gap-4 ${
+        justCompleted 
+          ? "animate-pulse bg-emerald-50/50 shadow-lg shadow-emerald-100/50 scale-[1.02]" 
+          : ""
+      } ${isDeleting ? "opacity-50" : ""}`}>
       {/* 체크박스 */}
       <div className="relative">
         <Button
@@ -118,9 +129,11 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
               : "border-2 border-muted-foreground/30 hover:border-emerald-300"
           } ${isUpdating ? "opacity-75" : ""}`}
           onClick={handleToggleComplete}
-          disabled={isUpdating}
+          disabled={isUpdating || isDeleting}
         >
-          {optimisticCompleted && (
+          {isUpdating ? (
+            <LoadingSpinner size="sm" className="w-3 h-3 text-white" />
+          ) : optimisticCompleted ? (
             <Check 
               className={`w-3 h-3 text-white transition-all duration-200 ${
                 justCompleted 
@@ -128,7 +141,7 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
                   : "animate-in fade-in-50 zoom-in-75"
               }`} 
             />
-          )}
+          ) : null}
         </Button>
         
         {/* 리플 효과 */}
@@ -212,16 +225,25 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
             <AlertDialogFooter>
               <AlertDialogCancel>취소</AlertDialogCancel>
               <AlertDialogAction
-                className="bg-red-500 hover:bg-red-600"
+                className="bg-red-500 hover:bg-red-600 disabled:opacity-50"
                 onClick={handleDelete}
+                disabled={isDeleting}
               >
-                삭제
+                {isDeleting ? (
+                  <>
+                    <LoadingSpinner size="sm" className="mr-2" />
+                    삭제 중...
+                  </>
+                ) : (
+                  "삭제"
+                )}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
       </div>
     </div>
+    </LoadingOverlay>
   );
 }
 
@@ -234,15 +256,21 @@ function EditTodoDialog({ todo, children, onUpdate }) {
     dueDate: todo.dueDate ? new Date(todo.dueDate) : null,
   });
   const [isOpen, setIsOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   const handleSave = async () => {
+    if (isSaving) return;
+    
     try {
+      setIsSaving(true);
       if (onUpdate) {
         await onUpdate(todo._id, form);
       }
       setIsOpen(false);
     } catch (err) {
       alert("할 일 수정에 실패했습니다: " + err.message);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -307,6 +335,7 @@ function EditTodoDialog({ todo, children, onUpdate }) {
               id="title"
               name="title"
               value={form.title}
+              disabled={isSaving}
               onChange={(e) => setForm({ ...form, title: e.target.value })}
               placeholder="할 일 제목을 입력하세요"
             />
@@ -319,6 +348,7 @@ function EditTodoDialog({ todo, children, onUpdate }) {
               id="description"
               name="description"
               value={form.description}
+              disabled={isSaving}
               onChange={(e) =>
                 setForm({ ...form, description: e.target.value })
               }
@@ -443,11 +473,19 @@ function EditTodoDialog({ todo, children, onUpdate }) {
             type="button"
             variant="outline"
             onClick={() => setIsOpen(false)}
+            disabled={isSaving}
           >
             취소
           </Button>
-          <Button type="button" onClick={handleSave}>
-            저장
+          <Button type="button" onClick={handleSave} disabled={isSaving}>
+            {isSaving ? (
+              <>
+                <LoadingSpinner size="sm" className="mr-2" />
+                저장 중...
+              </>
+            ) : (
+              "저장"
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

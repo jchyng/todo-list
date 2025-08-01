@@ -2,6 +2,7 @@
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
@@ -40,6 +41,7 @@ export default function CalendarPage() {
   const [monthlyStats, setMonthlyStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [operationLoading, setOperationLoading] = useState(false);
 
   // 달력에 표시할 날짜 배열 생성
   const calendarDays = useMemo(() => {
@@ -82,18 +84,22 @@ export default function CalendarPage() {
   // 할 일 수정
   const handleUpdateTodo = async (id, updateData) => {
     try {
+      setOperationLoading(true);
       const updatedTodo = await updateTodo(id, updateData);
       // 데이터 다시 로드 (날짜가 변경될 수 있으므로)
       await loadMonthlyData();
     } catch (err) {
       console.error('할 일 수정 실패:', err);
       throw err;
+    } finally {
+      setOperationLoading(false);
     }
   };
 
   // 할 일 삭제
   const handleDeleteTodo = async (id) => {
     try {
+      setOperationLoading(true);
       await deleteTodo(id);
       // 해당 할 일을 todosByDate에서 제거
       setTodosByDate(prev => {
@@ -109,18 +115,23 @@ export default function CalendarPage() {
     } catch (err) {
       console.error('할 일 삭제 실패:', err);
       throw err;
+    } finally {
+      setOperationLoading(false);
     }
   };
 
   // 완료 상태 토글
   const handleToggleComplete = async (id) => {
     try {
+      setOperationLoading(true);
       const updatedTodo = await toggleTodoComplete(id);
       // 완료 상태가 변경되면 데이터 다시 로드 (날짜 분류가 변경될 수 있으므로)
       await loadMonthlyData();
     } catch (err) {
       console.error('완료 상태 변경 실패:', err);
       throw err;
+    } finally {
+      setOperationLoading(false);
     }
   };
 
@@ -146,8 +157,11 @@ export default function CalendarPage() {
           onNextMonth={handleNextMonth}
         />
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">달력 데이터를 불러오는 중...</p>
+          <div className="flex items-center justify-center mb-4">
+            <LoadingSpinner size="xl" className="text-primary" />
+          </div>
+          <p className="text-lg font-medium text-foreground">달력 데이터를 불러오는 중...</p>
+          <p className="mt-2 text-sm text-muted-foreground">잠시만 기다려주세요</p>
         </div>
       </div>
     );

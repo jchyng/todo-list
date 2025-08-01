@@ -1,6 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { LoadingSpinner } from "@/components/ui/loading";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -95,8 +96,11 @@ export default function TodoPage() {
       <div className="flex flex-col gap-6">
         <CurrentTimeCard />
         <div className="text-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">할 일을 불러오는 중...</p>
+          <div className="flex items-center justify-center mb-4">
+            <LoadingSpinner size="xl" className="text-primary" />
+          </div>
+          <p className="text-lg font-medium text-foreground">할 일 목록을 불러오는 중...</p>
+          <p className="mt-2 text-sm text-muted-foreground">잠시만 기다려주세요</p>
         </div>
       </div>
     );
@@ -186,6 +190,7 @@ function AddTodoCard({ onAddTodo }) {
             }}
           />
           <Button onClick={handleAdd} disabled={loading}>
+            {loading && <LoadingSpinner size="sm" className="mr-2" />}
             {loading ? "추가 중..." : "추가"}
           </Button>
         </div>
@@ -202,6 +207,7 @@ function TodoListCard({
   error,
 }) {
   const [filteredTodos, setFilteredTodos] = useState(todos);
+  const [operationLoading, setOperationLoading] = useState(false);
 
   // todos가 변경될 때 filteredTodos 초기화
   useEffect(() => {
@@ -226,9 +232,31 @@ function TodoListCard({
         )}
         <TodoList
           todos={filteredTodos}
-          onUpdateTodo={onUpdateTodo}
-          onDeleteTodo={onDeleteTodo}
-          onToggleComplete={onToggleComplete}
+          onUpdateTodo={async (...args) => {
+            setOperationLoading(true);
+            try {
+              await onUpdateTodo(...args);
+            } finally {
+              setTimeout(() => setOperationLoading(false), 300);
+            }
+          }}
+          onDeleteTodo={async (...args) => {
+            setOperationLoading(true);
+            try {
+              await onDeleteTodo(...args);
+            } finally {
+              setTimeout(() => setOperationLoading(false), 300);
+            }
+          }}
+          onToggleComplete={async (...args) => {
+            setOperationLoading(true);
+            try {
+              await onToggleComplete(...args);
+            } finally {
+              setTimeout(() => setOperationLoading(false), 300);
+            }
+          }}
+          operationLoading={operationLoading}
         />
       </CardContent>
     </Card>
@@ -337,7 +365,7 @@ function FilterButton({ active, color, label, count, onClick }) {
   );
 }
 
-function TodoList({ todos, onUpdateTodo, onDeleteTodo, onToggleComplete }) {
+function TodoList({ todos, onUpdateTodo, onDeleteTodo, onToggleComplete, operationLoading }) {
   if (todos.length === 0) return <EmptyState />;
 
   return (
@@ -358,12 +386,12 @@ function TodoList({ todos, onUpdateTodo, onDeleteTodo, onToggleComplete }) {
 function EmptyState() {
   return (
     <div className="p-12 text-center">
-      <div className="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
-        <ClipboardList className="w-8 h-8 text-muted-foreground" />
+      <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-blue-200 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg">
+        <ClipboardList className="w-8 h-8 text-blue-600" />
       </div>
-      <p className="text-muted-foreground font-medium">할 일이 없습니다</p>
-      <p className="text-sm text-muted-foreground mt-1">
-        새로운 할 일을 추가해보세요
+      <p className="text-lg font-medium text-foreground mb-1">할 일이 없습니다</p>
+      <p className="text-sm text-muted-foreground">
+        새로운 할 일을 추가해보세요 ✨
       </p>
     </div>
   );
