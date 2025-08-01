@@ -398,27 +398,8 @@ function EditTodoDialog({ todo, children, onUpdate }) {
                       const selectedDate = new Date(date);
                       const today = new Date();
                       
-                      // 오늘 날짜를 선택한 경우, 현재 시간 이후의 가장 빠른 시간으로 설정
-                      if (selectedDate.toDateString() === today.toDateString()) {
-                        const currentHour = today.getHours();
-                        const currentMinute = today.getMinutes();
-                        
-                        // 30분 단위로 올림 처리
-                        let nextMinute = currentMinute <= 30 ? 30 : 0;
-                        let nextHour = currentMinute <= 30 ? currentHour : currentHour + 1;
-                        
-                        // 24시를 넘으면 다음날 00:00으로 설정
-                        if (nextHour >= 24) {
-                          selectedDate.setDate(selectedDate.getDate() + 1);
-                          nextHour = 0;
-                          nextMinute = 0;
-                        }
-                        
-                        selectedDate.setHours(nextHour, nextMinute, 0, 0);
-                      } else {
-                        // 미래 날짜는 00:00으로 설정
-                        selectedDate.setHours(0, 0, 0, 0);
-                      }
+                      // 모든 날짜를 23:30으로 설정
+                      selectedDate.setHours(23, 30, 0, 0);
                       
                       setForm({ ...form, dueDate: selectedDate });
                     }}
@@ -426,6 +407,19 @@ function EditTodoDialog({ todo, children, onUpdate }) {
                     locale={ko}
                     disabled={(date) => {
                       const today = new Date();
+                      const now = new Date();
+                      
+                      // 오늘 날짜인 경우 현재 시간이 23:30을 넘었는지 확인
+                      if (date.toDateString() === today.toDateString()) {
+                        const currentHour = now.getHours();
+                        const currentMinute = now.getMinutes();
+                        // 23:30 이후면 오늘 날짜 비활성화
+                        if (currentHour > 23 || (currentHour === 23 && currentMinute >= 30)) {
+                          return true;
+                        }
+                      }
+                      
+                      // 과거 날짜는 비활성화
                       today.setHours(0, 0, 0, 0);
                       return date < today;
                     }}
