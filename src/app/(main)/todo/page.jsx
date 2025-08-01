@@ -17,6 +17,7 @@ import {
 } from "@/lib/api";
 
 import { useState, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function TodoPage() {
   const [todos, setTodos] = useState([]);
@@ -163,8 +164,14 @@ function AddTodoCard({ onAddTodo }) {
       setLoading(true);
       await onAddTodo({ title: task.trim() });
       setTask(""); // 입력 초기화
+      toast.success('할 일이 추가되었습니다! ✨', {
+        duration: 2000,
+      });
     } catch (err) {
-      alert("할 일 추가에 실패했습니다: " + err.message);
+      toast.error('할 일 추가에 실패했습니다', {
+        description: err?.message || '잠시 후 다시 시도해주세요',
+        duration: 4000,
+      });
     } finally {
       setLoading(false);
     }

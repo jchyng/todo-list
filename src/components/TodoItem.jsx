@@ -51,6 +51,7 @@ import {
 import { LoadingSpinner, LoadingOverlay } from "@/components/ui/loading";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
+import { toast } from "sonner";
 
 // Reusable TodoItem component
 export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
@@ -76,22 +77,25 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
     setOptimisticCompleted(newCompleted);
     setIsUpdating(true);
     
-    // 완료 시 특별한 애니메이션 트리거
-    if (newCompleted) {
-      setJustCompleted(true);
-      // 애니메이션 완료 후 상태 리셋
-      setTimeout(() => setJustCompleted(false), 1200);
-    }
 
     try {
       // 비동기 API 호출
       await onToggleComplete(todo._id, newCompleted);
+      
+      // 성공 시 토스트 표시
+      if (newCompleted) {
+        toast.success('할 일을 완료했습니다! 🎉', {
+          duration: 2000,
+        });
+      }
     } catch (error) {
       // 실패 시 롤백
       setOptimisticCompleted(completed);
-      setJustCompleted(false);
       console.error('할 일 상태 변경 실패:', error);
-      // TODO: 사용자에게 에러 알림 (토스트 등)
+      toast.error('할 일 상태 변경에 실패했습니다', {
+        description: error?.message || '잠시 후 다시 시도해주세요',
+        duration: 4000,
+      });
     } finally {
       setIsUpdating(false);
     }
@@ -105,7 +109,10 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
       await onDelete(todo._id);
     } catch (error) {
       console.error('할 일 삭제 실패:', error);
-      // TODO: 사용자에게 에러 알림 (토스트 등)
+      toast.error('할 일 삭제에 실패했습니다', {
+        description: error?.message || '잠시 후 다시 시도해주세요',
+        duration: 4000,
+      });
     } finally {
       setIsDeleting(false);
     }
@@ -113,11 +120,7 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
 
   return (
     <LoadingOverlay loading={isDeleting} className="group">
-      <div className={`p-6 hover:bg-muted/50 transition-all duration-500 flex items-start gap-4 ${
-        justCompleted 
-          ? "animate-pulse bg-emerald-50/50 shadow-lg shadow-emerald-100/50 scale-[1.02]" 
-          : ""
-      } ${isDeleting ? "opacity-50" : ""}`}>
+      <div className={`p-6 hover:bg-muted/50 transition-all duration-500 flex items-start gap-4 ${isDeleting ? "opacity-50" : ""}`}>
       {/* 체크박스 */}
       <div className="relative">
         <Button
@@ -125,7 +128,7 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
           size="sm"
           className={`w-5 h-5 p-0 rounded flex items-center justify-center transition-all duration-300 ${
             optimisticCompleted 
-              ? "bg-emerald-500 shadow-lg shadow-emerald-200/60" 
+              ? "bg-emerald-500 shadow-lg shadow-emerald-200/60 hover:bg-emerald-600 hover:shadow-emerald-300/60" 
               : "border-2 border-muted-foreground/30 hover:border-emerald-300"
           } ${isUpdating ? "opacity-75" : ""}`}
           onClick={handleToggleComplete}
@@ -135,19 +138,11 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
             <LoadingSpinner size="sm" className="w-3 h-3 text-white" />
           ) : optimisticCompleted ? (
             <Check 
-              className={`w-3 h-3 text-white transition-all duration-200 ${
-                justCompleted 
-                  ? "scale-110" 
-                  : "animate-in fade-in-50 zoom-in-75"
-              }`} 
+              className="w-3 h-3 text-white transition-all duration-200"
             />
           ) : null}
         </Button>
         
-        {/* 리플 효과 */}
-        {justCompleted && (
-          <div className="absolute inset-0 rounded-full bg-emerald-400/30 animate-ping" />
-        )}
       </div>
 
       {/* 본문 */}
@@ -156,9 +151,9 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
           <p
             className={`font-medium transition-all duration-500 ease-out ${
               optimisticCompleted 
-                ? "line-through text-muted-foreground opacity-70 scale-[0.98]" 
-                : "text-foreground opacity-100 scale-100"
-            } ${justCompleted ? "animate-pulse" : ""}`}
+                ? "line-through text-muted-foreground opacity-70" 
+                : "text-foreground opacity-100"
+            }`}
           >
             {title}
           </p>
@@ -195,13 +190,11 @@ export function TodoItem({ todo, onToggleComplete, onDelete, onUpdate }) {
       <div className="flex items-center gap-2">
         <Badge
           variant={optimisticCompleted ? "default" : "secondary"}
-          className={`transition-all duration-500 ease-out transform ${
+          className={`transition-all duration-500 ease-out ${
             optimisticCompleted
               ? "bg-emerald-100 text-emerald-800 shadow-md shadow-emerald-100/50"
               : "bg-amber-100 text-amber-800"
-          } ${isUpdating ? "opacity-75" : ""} ${
-            justCompleted ? "animate-bounce scale-105" : ""
-          }`}
+          } ${isUpdating ? "opacity-75" : ""}`}
         >
           {optimisticCompleted ? "완료" : "진행중"}
         </Badge>
@@ -268,7 +261,10 @@ function EditTodoDialog({ todo, children, onUpdate }) {
       }
       setIsOpen(false);
     } catch (err) {
-      alert("할 일 수정에 실패했습니다: " + err.message);
+      toast.error('할 일 수정에 실패했습니다', {
+        description: err?.message || '잠시 후 다시 시도해주세요',
+        duration: 4000,
+      });
     } finally {
       setIsSaving(false);
     }
